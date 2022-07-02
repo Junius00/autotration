@@ -1,13 +1,17 @@
 #define BAUDRATE 115200
 
 //serial flags
-#define FLAG_RETURN 200
+#define FLAG_OK 200
 #define FLAG_STOP 201
+#define FLAG_INVALID 404
 
 //switch cases
 #define UP_UNTIL_STOP 101
 #define LOWER_UNTIL_STOP 102
-#define DROP_SEQ 103
+#define CALIBRATION_SEQ 103
+#define DROP_SEQ 104
+
+#define CALIBRATION_COUNT 3
 
 #define testPin 13
 #define laserPin 22
@@ -54,19 +58,6 @@ void setup() {
   Serial.begin(BAUDRATE);
 }
 
-String processInput() {
-  String data = "";
-  delay(20);
-
-  while(Serial.available()) {
-    char c = Serial.read();
-    data.concat(c);
-    Serial.print(c);
-  }
-
-  return data;
-}
-
 void blinkTestLight(int d) {
   digitalWrite(testPin, HIGH);
   delay(d);
@@ -74,8 +65,15 @@ void blinkTestLight(int d) {
   delay(d);
 }
 
+int waitForFlag() {
+  while (!Serial.available()) blinkTestLight(200);
+  blinkTestLight(100);
+
+   return Serial.readString().toInt();
+}
+
 void signalReceived() {
-  Serial.print(FLAG_RETURN);
+  Serial.print(FLAG_OK);
 }
 
 void pulseMotor(int stepPin, int dMicroS) {
@@ -136,6 +134,7 @@ double measureDropMM() {
     spinMotorMM(stepPinVert, dirPinVert, DOWN, d, 10);
     s++;
   }
+  
   return s * d;
 }
 
@@ -169,30 +168,41 @@ double dropSeq() {
 }
 
 void loop() {
-  while(!Serial.available()) blinkTestLight(200);
-  int dec = Serial.readString().toInt();
+  int dec = waitForFlag();
   blinkTestLight(100);
   
   switch (dec) {
     case UP_UNTIL_STOP:
       signalReceived();
 
-      while(Serial.readString().toInt() != FLAG_STOP) {
-        upSeq();
+      while (true) {
+        while(!Serial.available()) upSeq();
+        if (Serial.readString().toInt() == FLAG_STOP) break;
       }
       break;
 
      case LOWER_UNTIL_STOP:
-      signalReceived();
       measureDropMM();
+      signalReceived();
       break;
 
+     case CALIBRATION_SEQ:
+      Serial.print(CALIBRATION_COUNT);
+      
+      for (int i = 0; i < CALIBRATION_COUNT; i++) {
+        int f = waitForFlag();
+        if (f != FLAG_OK) break;
+        
+        Serial.print(measureDropMM());
+      }
+      break;
+      
      case DROP_SEQ:
       //signalReceived();
       Serial.print(dropSeq());
       break;
 
      default:
-      Serial.print(dec);
+      Serial.print(FLAG_INVALID);
   }
 }
