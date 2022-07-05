@@ -5,6 +5,10 @@
 #define FLAG_STOP 201
 #define FLAG_INVALID 404
 
+//serial constants
+#define DP = 4
+const char SEP = '|';
+
 //switch cases
 #define UP_UNTIL_STOP 101
 #define LOWER_UNTIL_STOP 102
@@ -13,8 +17,14 @@
 
 #define CALIBRATION_COUNT 3
 
+//Sensor pins
 #define testPin 13
 #define laserPin 22
+#define pHPin A0
+
+//pH parameters
+const int PH_KEEP_LAST = 5;
+const double PH_STABILITY_THRESHOLD = 0.01;
 
 //motor parameters
 #define enPinVert 5
@@ -58,6 +68,7 @@ void setup() {
   Serial.begin(BAUDRATE);
 }
 
+//I/O functions
 void blinkTestLight(int d) {
   digitalWrite(testPin, HIGH);
   delay(d);
@@ -65,6 +76,11 @@ void blinkTestLight(int d) {
   delay(d);
 }
 
+int isBlocked() {
+  return digitalRead(laserPin);
+}
+
+//Serial functions
 int waitForFlag() {
   while (!Serial.available()) blinkTestLight(200);
   blinkTestLight(100);
@@ -76,6 +92,7 @@ void signalReceived() {
   Serial.print(FLAG_OK);
 }
 
+//Stepper motor functions
 void pulseMotor(int stepPin, int dMicroS) {
   digitalWrite(stepPin, HIGH);
   delayMicroseconds(dMicroS);
@@ -107,14 +124,49 @@ void spinMotorMM(int stepPin, int dirPin, int dir, double heightMM, double spd) 
   spinMotorSteps(stepPin, dirPin, dir, int(steps), spd);
 }
 
-int isBlocked() {
-  return digitalRead(laserPin);
+//pH measurement
+double getPHValue() {
+  int analogVal = analogRead(pHPin);
+
+  return double(analogVal) * (14.0 / 1023.0);
 }
 
-double measureDropMM() {
-  digitalWrite(testPin, isBlocked());
-  //return;
+double getPHValueStable() {
+  double pHLast[PH_KEEP_LAST];
+  for (int i = 0; i < PH_KEEP_LAST; i++) pHLast[i] = -1;
   
+  double latest, pHMin, pHMax;
+  bool isStable = false;
+
+  while(!isStable) {
+    pHMin = 15;
+    pHMax = -1;
+    
+    for (int i = PH_KEEP_LAST - 1; i > 0; i--) {
+      latest = pHLast[i];
+      pHLast[i] = pHLast[i-1];
+
+      if (latest <= pHMin) pHMin = latest;
+      if (latest >= pHMax) pHMax = latest;
+    }
+
+    latest = getPHValue();
+    pHLast[0] = latest;
+
+    if (latest <= pHMin) pHMin = latest;
+    if (latest >= pHMax) pHMax = latest;
+
+    isStable = pHLast[PH_KEEP_LAST - 1] != -1 && ((pHMax - pHMin) <= PH_STABILITY_THRESHOLD);
+  }
+
+  double total = 0;
+  for (int i = 0; i < PH_KEEP_LAST; i++) total += pHLast[i];
+  
+  return total / PH_KEEP_LAST;
+}
+
+//Sequences
+double measureDropMM() {
   double d = 0.01;
   double s = 0;
   
