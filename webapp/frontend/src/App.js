@@ -23,8 +23,13 @@ class App extends React.Component {
 
     this.socket.on(SERIAL_OUT, (val) => {
       console.log('received', val);
-      this.setState({ serial: (val === FLAG_ERROR) ? 'Please check board connecction.' : val });
+      this.setState({ serial: (val === FLAG_ERROR) ? 'Please check board connection.' : val });
     });
+
+    this.socket.on('disconnect', () => {
+      //window.open('about:blank', '_self');
+      this.setState({ serial: 'This app has been disconnected because another instance has been opened. Please close this tab.' });
+    })
   }
 
   render() {

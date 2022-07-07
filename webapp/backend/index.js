@@ -14,18 +14,21 @@ const io = new Server(httpServer, {
     }
   });
 
-let board;
+let board, activeSocket;
 
 initBoard((b) => {
     board = b;
 });
 
 io.on('connection', (socket) => {
+    if (activeSocket) activeSocket.disconnect();
+    activeSocket = socket
+    
     console.log('connected socket:', socket.id);
     socket.emit(SERIAL_OUT, `Connected with ID: ${socket.id}`);
 
     socket.on(SERIAL_IN, (data) => onSerialIn(socket, board, data));
-    socket.on('disconnect', () => board.close());
+    socket.on('disconnect', () => console.log(`${socket.id} has disconnected.`));
 });
 
 httpServer.listen(HTTP_PORT, () => {
