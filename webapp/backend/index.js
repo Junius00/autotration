@@ -22,7 +22,7 @@ initBoard((b) => {
 
 io.on('connection', (socket) => {
     if (activeSocket) activeSocket.disconnect();
-    activeSocket = socket
+    activeSocket = socket;
     
     console.log('connected socket:', socket.id);
     socket.emit(SERIAL_OUT, `Connected with ID: ${socket.id}`);

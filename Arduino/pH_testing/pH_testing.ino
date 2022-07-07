@@ -1,16 +1,43 @@
+#define pHPin A0
+#define FILTER_FACTOR 4
+#define FILTER_PASSES 7500
+#define FILTER_SETTLE 80
+#define FILTER_AVG 60
+
+int a = 0;
+
 void setup() {
-// initialize serial communication at 9600 bits per second:
-Serial.begin(9600);
-pinMode(A1, INPUT);
+  Serial.begin(9600);
+  //+5V to AREF, 0V to GND
+  analogReference(EXTERNAL);
 
 }
-// the loop routine runs over and over showing the voltage on A0
+
+int filterResult(int a) {
+  return a >> FILTER_FACTOR;
+}
+
+double filterAnalog(int analogPin) {
+  unsigned long total = 0;
+  
+  for (int j = 0; j < FILTER_SETTLE + FILTER_AVG; j++) {
+    for (int i = 0; i < FILTER_PASSES; i++) {
+      a = a - (filterResult(a)) + analogRead(analogPin);
+    }
+
+    Serial.println("Finished pass " + String(j+1) + ", a: " + String(filterResult(a)));
+    if (j >= FILTER_SETTLE) total += filterResult(a);
+  }
+
+  return double(total) / FILTER_AVG;
+}
+
+double currentPH() {
+  double a = filterAnalog(pHPin);
+  Serial.println("Analog reading: " + String(a));
+  return a * -0.02727 + 20.6909;
+}
+
 void loop() {
-// read the input on analog pin 0:
-int sensorValue = analogRead(A1);
-// Convert the analog reading (which goes from 0 - 1023) to a voltage (0 - 5V):
-float voltage = sensorValue * (5.0 / 1023.0);
-// print out the value you read:
-Serial.println(voltage);
-delay(300);
+  Serial.println("Current pH: " + String(currentPH(), 2));
 }
