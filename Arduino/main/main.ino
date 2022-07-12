@@ -117,8 +117,6 @@ void spinMotorDeg(int stepPin, int dirPin, int dir, double angle, double spd) {
 }
 
 void spinMotorMM(int stepPin, int dirPin, int dir, double heightMM, double spd) {
-  digitalWrite(dirPin, dir);
-  
   double steps = heightMM / double(PITCH) * PULSE;
   
   spinMotorSteps(stepPin, dirPin, dir, int(steps), spd);
@@ -198,7 +196,7 @@ void knobSeq() {
   int d = 1;
   int steps = 0;
   
-  while(!isBlocked()) spinMotorSteps(stepPinKnob, dirPinKnob, CLOSE, d, 30);
+  //while(!isBlocked()) spinMotorSteps(stepPinKnob, dirPinKnob, CLOSE, d, 30);
   while(isBlocked()) {
     spinMotorSteps(stepPinKnob, dirPinKnob, OPEN, d, 75);
     steps++;
@@ -221,7 +219,6 @@ double dropSeq() {
 
 void loop() {
   int dec = waitForFlag();
-  blinkTestLight(100);
   
   switch (dec) {
     case UP_UNTIL_STOP:

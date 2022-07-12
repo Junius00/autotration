@@ -1,15 +1,15 @@
 #define pHPin A0
 #define FILTER_FACTOR 4
-#define FILTER_PASSES 7500
-#define FILTER_SETTLE 80
-#define FILTER_AVG 60
+#define FILTER_PASSES 5000
+#define FILTER_SETTLE 50
+#define FILTER_AVG 30
 
 int a = 0;
 
 void setup() {
   Serial.begin(9600);
-  //+5V to AREF, 0V to GND
-  analogReference(EXTERNAL);
+  //+9V DC minimum to Arduino for stable analog readings
+  analogReference(DEFAULT);
 
 }
 
@@ -25,7 +25,7 @@ double filterAnalog(int analogPin) {
       a = a - (filterResult(a)) + analogRead(analogPin);
     }
 
-    Serial.println("Finished pass " + String(j+1) + ", a: " + String(filterResult(a)));
+    //Serial.println("Finished pass " + String(j+1) + ", a: " + String(filterResult(a)));
     if (j >= FILTER_SETTLE) total += filterResult(a);
   }
 
@@ -35,7 +35,7 @@ double filterAnalog(int analogPin) {
 double currentPH() {
   double a = filterAnalog(pHPin);
   Serial.println("Analog reading: " + String(a));
-  return a * -0.02727 + 20.6909;
+  return a * -0.026714159 + 20.66429207;
 }
 
 void loop() {
