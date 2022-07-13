@@ -12,27 +12,32 @@ const char SEP = '|';
 //switch cases
 #define UP_UNTIL_STOP 101
 #define LOWER_UNTIL_STOP 102
-#define CALIBRATION_SEQ 103
-#define DROP_SEQ 104
+#define LASER_CALIBRATION_SEQ 103
+#define PH_CALIBRATION_SEQ 104
+#define DROP_SEQ 105
 
-#define CALIBRATION_COUNT 3
+#define LASER_CALIBRATION_COUNT 3
+#define PH_CALIBRATION_COUNT 5
 
 //Sensor pins
 #define testPin 13
-#define laserPin 22
+#define laserPin 53
 #define pHPin A0
+#define pHTempPin A2
 
 //pH parameters
-const int PH_KEEP_LAST = 5;
-const double PH_STABILITY_THRESHOLD = 0.01;
+#define FILTER_FACTOR 4
+#define FILTER_PASSES 5000
+#define FILTER_SETTLE 50
+#define FILTER_AVG 30
 
 //motor parameters
-#define enPinVert 5
-#define dirPinVert 6
-#define stepPinVert 7
-#define enPinKnob 8
-#define dirPinKnob 9
-#define stepPinKnob 10
+#define enPinVert 36
+#define dirPinVert 38
+#define stepPinVert 40
+#define enPinKnob 22
+#define dirPinKnob 24
+#define stepPinKnob 26
 
 #define PULSE 6400 //microstep of 6400 steps for 1 revolution
 #define DMIN 25 //minimum delay time for smooth spinning
@@ -61,10 +66,14 @@ void setup() {
   pinMode(enPinKnob, OUTPUT);
   pinMode(dirPinKnob, OUTPUT);
   pinMode(stepPinKnob, OUTPUT);
+
+  pinMode(pHPin, INPUT);
+  //+9V DC minimum to Arduino for stable analog readings
+  analogReference(DEFAULT);
   
   digitalWrite(enPinVert, HIGH);
   digitalWrite(enPinKnob, HIGH);
-
+  
   Serial.begin(BAUDRATE);
 }
 
@@ -122,45 +131,30 @@ void spinMotorMM(int stepPin, int dirPin, int dir, double heightMM, double spd) 
   spinMotorSteps(stepPin, dirPin, dir, int(steps), spd);
 }
 
-//pH measurement
-double getPHValue() {
-  int analogVal = analogRead(pHPin);
-
-  return double(analogVal) * (14.0 / 1023.0);
+//analog filtering and stabilisation
+int filterResult(int a) {
+  return a >> FILTER_FACTOR;
 }
 
-double getPHValueStable() {
-  double pHLast[PH_KEEP_LAST];
-  for (int i = 0; i < PH_KEEP_LAST; i++) pHLast[i] = -1;
+double filterAnalog(int analogPin) {
+  unsigned long total = 0;
   
-  double latest, pHMin, pHMax;
-  bool isStable = false;
-
-  while(!isStable) {
-    pHMin = 15;
-    pHMax = -1;
-    
-    for (int i = PH_KEEP_LAST - 1; i > 0; i--) {
-      latest = pHLast[i];
-      pHLast[i] = pHLast[i-1];
-
-      if (latest <= pHMin) pHMin = latest;
-      if (latest >= pHMax) pHMax = latest;
+  for (int j = 0; j < FILTER_SETTLE + FILTER_AVG; j++) {
+    for (int i = 0; i < FILTER_PASSES; i++) {
+      a = a - (filterResult(a)) + analogRead(analogPin);
     }
 
-    latest = getPHValue();
-    pHLast[0] = latest;
-
-    if (latest <= pHMin) pHMin = latest;
-    if (latest >= pHMax) pHMax = latest;
-
-    isStable = pHLast[PH_KEEP_LAST - 1] != -1 && ((pHMax - pHMin) <= PH_STABILITY_THRESHOLD);
+    if (j >= FILTER_SETTLE) total += filterResult(a);
   }
 
+  return double(total) / FILTER_AVG;
+}
+
+double analogAvg(int analogPin, int avgCount) {
   double total = 0;
-  for (int i = 0; i < PH_KEEP_LAST; i++) total += pHLast[i];
-  
-  return total / PH_KEEP_LAST;
+
+  for (int i = 0; i < avgCount; i++) total += filterAnalog(analogPin);
+  return total / avgCount;
 }
 
 //Sequences
@@ -235,16 +229,23 @@ void loop() {
       signalReceived();
       break;
 
-     case CALIBRATION_SEQ:
-      Serial.print(CALIBRATION_COUNT);
+     case LASER_CALIBRATION_SEQ:
+      Serial.print(LASER_CALIBRATION_COUNT);
       
-      for (int i = 0; i < CALIBRATION_COUNT; i++) {
+      for (int i = 0; i < LASER_CALIBRATION_COUNT; i++) {
         int f = waitForFlag();
         if (f != FLAG_OK) break;
         
         Serial.print(measureDropMM());
       }
       break;
+
+     case PH_CALIBRATION_SEQ:
+      while (true) {
+        int nextFlag = waitForFlag();
+        if (nextFlag == FLAG_STOP) break;
+        Serial.print(analogAvg(pHPin, PH_CALIBRATION_COUNT);
+      }
       
      case DROP_SEQ:
       //signalReceived();
