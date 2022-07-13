@@ -21,7 +21,8 @@ const char SEP = '|';
 
 //Sensor pins
 #define testPin 13
-#define laserPin 53
+#define laserDiodePin 4
+#define laserSensorPin 53
 #define pHPin A0
 #define pHTempPin A2
 
@@ -55,9 +56,10 @@ const char SEP = '|';
 #define CLOSE HIGH
 
 void setup() {
-  pinMode(laserPin, INPUT);
-
   pinMode(testPin, OUTPUT);
+
+  pinMode(laserDiodePin, OUTPUT);
+  pinMode(laserSensorPin, INPUT);
   
   pinMode(enPinVert, OUTPUT);
   pinMode(dirPinVert, OUTPUT);
@@ -86,7 +88,7 @@ void blinkTestLight(int d) {
 }
 
 int isBlocked() {
-  return digitalRead(laserPin);
+  return digitalRead(laserSensorPin);
 }
 
 //Serial functions
