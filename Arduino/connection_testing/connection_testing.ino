@@ -47,7 +47,8 @@ void setup() {
 
   digitalWrite(enPinVert, HIGH);
   digitalWrite(enPinKnob, HIGH);
-  
+
+  digitalWrite(laserDiodePin, HIGH);
   Serial.begin(9600);
 }
 
@@ -84,9 +85,5 @@ void spinMotorDeg(int stepPin, int dirPin, int dir, double angle, double spd) {
 
 void loop() {
   // put your main code here, to run repeatedly:
-  spinMotorDeg(stepPinVert, dirPinVert, CW, 60, 100);
-  spinMotorDeg(stepPinVert, dirPinVert, CCW, 60, 20);
-  
-  spinMotorDeg(stepPinKnob, dirPinKnob, CW, 60, 100);
-  spinMotorDeg(stepPinKnob, dirPinKnob, CCW, 60, 20);
+  Serial.println(digitalRead(laserSensorPin));
 }
