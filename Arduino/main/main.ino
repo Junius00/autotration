@@ -75,7 +75,8 @@ void setup() {
   
   digitalWrite(enPinVert, HIGH);
   digitalWrite(enPinKnob, HIGH);
-  
+
+  digitalWrite(laserDiodePin, HIGH);
   Serial.begin(BAUDRATE);
 }
 
@@ -140,6 +141,7 @@ int filterResult(int a) {
 
 double filterAnalog(int analogPin) {
   unsigned long total = 0;
+  int a = 0;
   
   for (int j = 0; j < FILTER_SETTLE + FILTER_AVG; j++) {
     for (int i = 0; i < FILTER_PASSES; i++) {
@@ -185,23 +187,24 @@ double measureDropMM() {
 }
 
 void upSeq() {
-  spinMotorMM(stepPinVert, dirPinVert, UP, 1, 100);
+  spinMotorMM(stepPinVert, dirPinVert, UP, 1, 80);
 }
 
 void knobSeq() {
-  int d = 1;
+  int d = 7;
   int steps = 0;
   
   //while(!isBlocked()) spinMotorSteps(stepPinKnob, dirPinKnob, CLOSE, d, 30);
   while(isBlocked()) {
-    spinMotorSteps(stepPinKnob, dirPinKnob, OPEN, d, 75);
+    spinMotorSteps(stepPinKnob, dirPinKnob, OPEN, d, 70);
     steps++;
 
     if (!isBlocked()) break;
     delay(10);
   }
 
-  spinMotorDeg(stepPinKnob, dirPinKnob, CLOSE, 15, 75); 
+  //delay(1500);
+  spinMotorDeg(stepPinKnob, dirPinKnob, CLOSE, 20, 75); 
 }
 
 
@@ -246,7 +249,7 @@ void loop() {
       while (true) {
         int nextFlag = waitForFlag();
         if (nextFlag == FLAG_STOP) break;
-        Serial.print(analogAvg(pHPin, PH_CALIBRATION_COUNT);
+        Serial.print(analogAvg(pHPin, PH_CALIBRATION_COUNT));
       }
       
      case DROP_SEQ:
