@@ -6,7 +6,7 @@
 #define FLAG_INVALID 404
 
 //serial constants
-#define DP = 4
+#define DP 4
 const char SEP = '|';
 
 //switch cases
@@ -161,7 +161,7 @@ double analogAvg(int analogPin, int avgCount) {
   return total / avgCount;
 }
 
-//Sequences
+//Measurement
 double measureDropMM() {
   double d = 0.01;
   double s = 0;
@@ -186,34 +186,43 @@ double measureDropMM() {
   return s * d;
 }
 
+double measureAnalogPH() {
+  return analogAvg(pHPin, PH_CALIBRATION_COUNT);
+}
+
+//Sequences
 void upSeq() {
   spinMotorMM(stepPinVert, dirPinVert, UP, 1, 80);
 }
 
-void knobSeq() {
+void knobSeq(int longDrip = 0) {
   int d = 7;
-  int steps = 0;
   
-  //while(!isBlocked()) spinMotorSteps(stepPinKnob, dirPinKnob, CLOSE, d, 30);
   while(isBlocked()) {
     spinMotorSteps(stepPinKnob, dirPinKnob, OPEN, d, 70);
-    steps++;
-
+    
     if (!isBlocked()) break;
     delay(10);
   }
 
-  //delay(1500);
+  if (longDrip) {
+    spinMotorSteps(stepPinKnob, dirPinKnob, OPEN, d, 70);
+    delay(1000);
+    spinMotorSteps(stepPinKnob, dirPinKnob, CLOSE, d, 75);
+  }
   spinMotorDeg(stepPinKnob, dirPinKnob, CLOSE, 20, 75); 
 }
 
 
-double dropSeq() {
+String dropSeq() {
     measureDropMM();
 
     knobSeq();
     delay(500);
-    return measureDropMM();
+    double distance = measureDropMM();
+    double pH = measureAnalogPH();
+
+    return String(distance, DP) + String(SEP) + String(pH, DP);
 }
 
 void loop() {
@@ -249,7 +258,7 @@ void loop() {
       while (true) {
         int nextFlag = waitForFlag();
         if (nextFlag == FLAG_STOP) break;
-        Serial.print(analogAvg(pHPin, PH_CALIBRATION_COUNT));
+        Serial.print(measureAnalogPH());
       }
       
      case DROP_SEQ:

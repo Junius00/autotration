@@ -47,16 +47,14 @@ void setup() {
 
   digitalWrite(enPinVert, HIGH);
   digitalWrite(enPinKnob, HIGH);
-
-  digitalWrite(laserDiodePin, HIGH);
   Serial.begin(9600);
 }
 
 void pulsePin(int pin, int d) {
   digitalWrite(pin, HIGH);
-  delay(200);
+  delay(d);
   digitalWrite(pin, LOW);
-  delay(200);
+  delay(d);
 }
 
 //Stepper motor functions
@@ -85,5 +83,17 @@ void spinMotorDeg(int stepPin, int dirPin, int dir, double angle, double spd) {
 
 void loop() {
   // put your main code here, to run repeatedly:
+  digitalWrite(laserDiodePin, HIGH);
+  delay(50);
   Serial.println(digitalRead(laserSensorPin));
+  delay(200);
+  digitalWrite(laserDiodePin, LOW);
+  delay(50);
+  Serial.println(digitalRead(laserSensorPin));
+  delay(200);
+  //spinMotorDeg(stepPinVert, dirPinVert, CW, 60, 75);
+  //spinMotorDeg(stepPinVert, dirPinVert, CCW, 60, 50);
+
+  //spinMotorDeg(stepPinKnob, dirPinKnob, CW, 60, 75);
+  //spinMotorDeg(stepPinKnob, dirPinKnob, CCW, 60, 50);
 }
