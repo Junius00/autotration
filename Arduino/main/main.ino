@@ -244,14 +244,10 @@ void loop() {
       break;
 
      case LASER_CALIBRATION_SEQ:
-      Serial.print(LASER_CALIBRATION_COUNT);
-      
-      for (int i = 0; i < LASER_CALIBRATION_COUNT; i++) {
-        int f = waitForFlag();
-        if (f != FLAG_OK) break;
+      int f = waitForFlag();
+      if (f != FLAG_OK) break;
         
-        Serial.print(measureDropMM());
-      }
+      Serial.print(measureDropMM());
       break;
 
      case PH_CALIBRATION_SEQ:
