@@ -6,7 +6,7 @@
 #define FLAG_INVALID 404
 
 //serial constants
-#define DP 4
+#define DP 2
 const char SEP = '|';
 
 //switch cases
@@ -17,7 +17,7 @@ const char SEP = '|';
 #define DROP_SEQ 105
 
 #define LASER_CALIBRATION_COUNT 3
-#define PH_CALIBRATION_COUNT 5
+#define PH_CALIBRATION_COUNT 3
 
 //Sensor pins
 #define testPin 13
@@ -48,6 +48,7 @@ const char SEP = '|';
 
 //scaffold parameters
 #define PITCH 8 //pitch
+#define VERT_BUFFER 0.35 //vertical buffer
 #define UP HIGH
 #define DOWN LOW
 
@@ -88,6 +89,7 @@ void blinkTestLight(int d) {
   delay(d);
 }
 
+
 int isBlocked() {
   return digitalRead(laserSensorPin);
 }
@@ -97,7 +99,7 @@ int waitForFlag() {
   while (!Serial.available()) blinkTestLight(200);
   blinkTestLight(100);
 
-   return Serial.readString().toInt();
+  return Serial.readString().toInt();
 }
 
 void signalReceived() {
@@ -157,7 +159,9 @@ double filterAnalog(int analogPin) {
 double analogAvg(int analogPin, int avgCount) {
   double total = 0;
 
-  for (int i = 0; i < avgCount; i++) total += filterAnalog(analogPin);
+  for (int i = 0; i < avgCount; i++) {
+    total += filterAnalog(analogPin);
+  }
   return total / avgCount;
 }
 
@@ -182,12 +186,10 @@ double measureDropMM() {
     spinMotorMM(stepPinVert, dirPinVert, DOWN, d, 10);
     s++;
   }
+
+  spinMotorMM(stepPinVert, dirPinVert, DOWN, VERT_BUFFER, 10);
   
   return s * d;
-}
-
-double measureAnalogPH() {
-  return analogAvg(pHPin, PH_CALIBRATION_COUNT);
 }
 
 //Sequences
@@ -195,22 +197,52 @@ void upSeq() {
   spinMotorMM(stepPinVert, dirPinVert, UP, 1, 80);
 }
 
-void knobSeq(int longDrip = 0) {
-  int d = 7;
+double laserCalSeq() {
+  Serial.println(isBlocked());
+  Serial.println("dropping");
+  measureDropMM();
   
-  while(isBlocked()) {
+  int d = 7;
+  int steps = 0;
+  Serial.println("turning knob");
+  while (isBlocked()) {
     spinMotorSteps(stepPinKnob, dirPinKnob, OPEN, d, 70);
-    
+    steps += d;
+    Serial.println("Is blocked: " + String(isBlocked()));
     if (!isBlocked()) break;
     delay(10);
   }
+  Serial.println(isBlocked());
+  Serial.println("closing knob");
+  Serial.println(isBlocked());
+  while (waitForFlag() != FLAG_STOP);
 
-  if (longDrip) {
-    spinMotorSteps(stepPinKnob, dirPinKnob, OPEN, d, 70);
-    delay(1000);
-    spinMotorSteps(stepPinKnob, dirPinKnob, CLOSE, d, 75);
+  spinMotorSteps(stepPinKnob, dirPinKnob, CLOSE, steps, 75);
+  return measureDropMM(); 
+}
+
+void knobSeq(int longDrip = 0) {
+  int d = 1;
+
+  while (true) {
+    while(isBlocked()) {
+      spinMotorSteps(stepPinKnob, dirPinKnob, OPEN, d, 70);
+      
+      if (!isBlocked()) break;
+      delay(10);
+    }
+  
+    if (longDrip) {
+      spinMotorSteps(stepPinKnob, dirPinKnob, OPEN, d, 70);
+      delay(1000);
+      spinMotorSteps(stepPinKnob, dirPinKnob, CLOSE, d, 75);
+    }
+    
+    if (!isBlocked()) {
+      spinMotorDeg(stepPinKnob, dirPinKnob, CLOSE, 20, 75); 
+      break;
+    }
   }
-  spinMotorDeg(stepPinKnob, dirPinKnob, CLOSE, 20, 75); 
 }
 
 
@@ -220,14 +252,21 @@ String dropSeq() {
     knobSeq();
     delay(500);
     double distance = measureDropMM();
-    double pH = measureAnalogPH();
+    while (distance < 0) {
+      knobSeq();
+      delay(500);
+      distance = measureDropMM();
+    }
+    
+    double pH = 500;
+    //double pH = filterAnalog(pHPin);
 
     return String(distance, DP) + String(SEP) + String(pH, DP);
 }
 
 void loop() {
   int dec = waitForFlag();
-  
+
   switch (dec) {
     case UP_UNTIL_STOP:
       signalReceived();
@@ -239,23 +278,25 @@ void loop() {
       break;
 
      case LOWER_UNTIL_STOP:
-      measureDropMM();
-      signalReceived();
+      Serial.print(measureDropMM());
+      
       break;
 
      case LASER_CALIBRATION_SEQ:
-      int f = waitForFlag();
-      if (f != FLAG_OK) break;
-        
-      Serial.print(measureDropMM());
+      Serial.print(laserCalSeq());
+      
       break;
 
      case PH_CALIBRATION_SEQ:
       while (true) {
+        Serial.print(filterAnalog(pHPin));
+        //Serial.print(analogAvg(pHPin, PH_CALIBRATION_COUNT));
+
         int nextFlag = waitForFlag();
         if (nextFlag == FLAG_STOP) break;
-        Serial.print(measureAnalogPH());
       }
+
+      break;
       
      case DROP_SEQ:
       //signalReceived();
@@ -264,5 +305,6 @@ void loop() {
 
      default:
       Serial.print(FLAG_INVALID);
+      break;
   }
 }

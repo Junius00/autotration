@@ -14,12 +14,19 @@ void setup() {
 }
 
 int filterResult(int a) {
+  //Serial.println(String(a>>FILTER_FACTOR))
   return a >> FILTER_FACTOR;
 }
 
+double avgAnalog(int analogPin){
+  double total=0;
+  for (int i=0;i<FILTER_AVG;i++){
+    total+=
+  }
+  
+}
 double filterAnalog(int analogPin) {
   unsigned long total = 0;
-  
   for (int j = 0; j < FILTER_SETTLE + FILTER_AVG; j++) {
     for (int i = 0; i < FILTER_PASSES; i++) {
       a = a - (filterResult(a)) + analogRead(analogPin);

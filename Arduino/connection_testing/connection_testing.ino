@@ -86,11 +86,11 @@ void loop() {
   digitalWrite(laserDiodePin, HIGH);
   delay(50);
   Serial.println(digitalRead(laserSensorPin));
-  delay(200);
-  digitalWrite(laserDiodePin, LOW);
-  delay(50);
-  Serial.println(digitalRead(laserSensorPin));
-  delay(200);
+//  delay(200);
+//  digitalWrite(laserDiodePin, LOW);
+//  delay(50);
+//  Serial.println(digitalRead(laserSensorPin));
+//  delay(200);
   //spinMotorDeg(stepPinVert, dirPinVert, CW, 60, 75);
   //spinMotorDeg(stepPinVert, dirPinVert, CCW, 60, 50);
 
