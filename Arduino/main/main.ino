@@ -103,7 +103,7 @@ int waitForFlag() {
 }
 
 void signalReceived() {
-  Serial.print(FLAG_OK);
+  Serial.println(FLAG_OK);
 }
 
 //Stepper motor functions
@@ -163,6 +163,12 @@ double analogAvg(int analogPin, int avgCount) {
     total += filterAnalog(analogPin);
   }
   return total / avgCount;
+}
+
+//pH conversion from analog
+double currentPH(double a) {    //Siyuan: added this to convert analog to pH
+  //Serial.println("Analog reading: " + String(a));
+  return a * -0.02587 + 20.82834885;
 }
 
 //Measurement
@@ -225,10 +231,15 @@ void knobSeq(int longDrip = 0) {
   int d = 1;
 
   while (true) {
+    int count = 0;
     while(isBlocked()) {
       spinMotorSteps(stepPinKnob, dirPinKnob, OPEN, d, 70);
       
-      if (!isBlocked()) break;
+      if (!isBlocked()){    //Siyuan: changed the code to let the knob keep turning for a few steps before closing it, so as to ensure 1 drop to fall
+        count+=1;
+        //delay(150);
+        if (count>4) break;
+      }
       delay(10);
     }
   
@@ -258,10 +269,9 @@ String dropSeq() {
       distance = measureDropMM();
     }
     
-    double pH = 500;
-    //double pH = filterAnalog(pHPin);
-
-    return String(distance, DP) + String(SEP) + String(pH, DP);
+    double a = filterAnalog(pHPin);
+    double pH= currentPH(a);
+    return String(distance, DP) + String(SEP) + String(a, DP) + String(SEP) +String(pH, DP);  //Siyuan: added the analog value display
 }
 
 void loop() {
@@ -273,12 +283,15 @@ void loop() {
 
       while (true) {
         while(!Serial.available()) upSeq();
-        if (Serial.readString().toInt() == FLAG_STOP) break;
+        if (Serial.readString().toInt() == FLAG_STOP){
+          signalReceived();
+          break;
+        }
       }
       break;
 
      case LOWER_UNTIL_STOP:
-      Serial.print(measureDropMM());
+      Serial.println(measureDropMM());
       
       break;
 
@@ -288,8 +301,11 @@ void loop() {
       break;
 
      case PH_CALIBRATION_SEQ:
+      signalReceived();
       while (true) {
-        Serial.print(filterAnalog(pHPin));
+        double a=filterAnalog(pHPin);
+        Serial.println(a);
+        Serial.println(currentPH(a));
         //Serial.print(analogAvg(pHPin, PH_CALIBRATION_COUNT));
 
         int nextFlag = waitForFlag();
@@ -299,12 +315,12 @@ void loop() {
       break;
       
      case DROP_SEQ:
-      //signalReceived();
-      Serial.print(dropSeq());
+      signalReceived();
+      Serial.println(dropSeq());
       break;
 
      default:
-      Serial.print(FLAG_INVALID);
+      Serial.println(FLAG_INVALID);
       break;
   }
 }

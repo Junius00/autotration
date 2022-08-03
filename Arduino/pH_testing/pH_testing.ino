@@ -20,10 +20,10 @@ int filterResult(int a) {
 
 double avgAnalog(int analogPin){
   double total=0;
-  for (int i=0;i<FILTER_AVG;i++){
-    total+=
+  for (int i=0;i<5;i++){
+    total+=filterAnalog(analogPin);
   }
-  
+  return total / 5;
 }
 double filterAnalog(int analogPin) {
   unsigned long total = 0;
@@ -42,9 +42,10 @@ double filterAnalog(int analogPin) {
 double currentPH() {
   double a = filterAnalog(pHPin);
   Serial.println("Analog reading: " + String(a));
-  return a * -0.026714159 + 20.66429207;
+  return a * -0.02587 + 20.82834885;
 }
 
 void loop() {
   Serial.println("Current pH: " + String(currentPH(), 2));
+  delay(5000);
 }
