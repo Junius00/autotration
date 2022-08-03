@@ -15,6 +15,7 @@ const char SEP = '|';
 #define LASER_CALIBRATION_SEQ 103
 #define PH_CALIBRATION_SEQ 104
 #define DROP_SEQ 105
+#define LONG_DRIP_SEQ 106
 
 #define LASER_CALIBRATION_COUNT 3
 #define PH_CALIBRATION_COUNT 3
@@ -315,10 +316,13 @@ void loop() {
       break;
       
      case DROP_SEQ:
-      signalReceived();
       Serial.println(dropSeq());
       break;
 
+     //Junius: Added flag 106 for long drip
+     case LONG_DRIP_SEQ:
+      Serial.println(dropSeq(1)); 
+     
      default:
       Serial.println(FLAG_INVALID);
       break;
