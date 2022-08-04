@@ -169,7 +169,7 @@ double analogAvg(int analogPin, int avgCount) {
 //pH conversion from analog
 double currentPH(double a) {    //Siyuan: added this to convert analog to pH
   //Serial.println("Analog reading: " + String(a));
-  return a * -0.02587 + 20.82834885;
+  return a * -0.02602 + 20.69362;
 }
 
 //Measurement
@@ -230,38 +230,39 @@ double laserCalSeq() {
 
 void knobSeq(int longDrip = 0) {
   int d = 1;
-
-  while (true) {
-    int count = 0;
-    while(isBlocked()) {
-      spinMotorSteps(stepPinKnob, dirPinKnob, OPEN, d, 70);
-      
-      if (!isBlocked()){    //Siyuan: changed the code to let the knob keep turning for a few steps before closing it, so as to ensure 1 drop to fall
-        count+=1;
-        //delay(150);
-        if (count>4) break;
-      }
-      delay(10);
-    }
-  
-    if (longDrip) {
-      spinMotorSteps(stepPinKnob, dirPinKnob, OPEN, d, 70);
-      delay(1000);
-      spinMotorSteps(stepPinKnob, dirPinKnob, CLOSE, d, 75);
-    }
-    
-    if (!isBlocked()) {
-      spinMotorDeg(stepPinKnob, dirPinKnob, CLOSE, 20, 75); 
-      break;
-    }
+  if (longDrip){
+    spinMotorSteps(stepPinKnob, dirPinKnob, OPEN, 1600, 70);
+    delay(1000);
+    spinMotorSteps(stepPinKnob, dirPinKnob, CLOSE, 1600, 70);
   }
+  else{
+    while (true) {
+      while(isBlocked()) {
+        spinMotorSteps(stepPinKnob, dirPinKnob, OPEN, d, 75);
+      
+        delay(10);
+      }
+      spinMotorSteps(stepPinKnob, dirPinKnob, OPEN, 4, 75); //Siyuan: changed the code to let the knob keep turning for a few steps before closing it, so as to ensure 1 drop to fall
+  
+      //if (longDrip) {
+       //spinMotorSteps(stepPinKnob, dirPinKnob, OPEN, d, 70);
+       //delay(1000);
+       //spinMotorSteps(stepPinKnob, dirPinKnob, CLOSE, d, 75);
+      //}
+    
+     if (!isBlocked()) {
+        spinMotorDeg(stepPinKnob, dirPinKnob, CLOSE, 35, 75); 
+        break;
+     }
+   }
+ }
 }
 
 
-String dropSeq() {
+String dropSeq(int longDrip = 0) {
     measureDropMM();
 
-    knobSeq();
+    knobSeq(longDrip);
     delay(500);
     double distance = measureDropMM();
     while (distance < 0) {
@@ -322,6 +323,7 @@ void loop() {
      //Junius: Added flag 106 for long drip
      case LONG_DRIP_SEQ:
       Serial.println(dropSeq(1)); 
+      break;
      
      default:
       Serial.println(FLAG_INVALID);
