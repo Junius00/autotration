@@ -196,7 +196,7 @@ double measureDropMM() {
 
   spinMotorMM(stepPinVert, dirPinVert, DOWN, VERT_BUFFER, 10);
   
-  return s * d;
+  return s * d + 0.35;
 }
 
 //Sequences
@@ -232,14 +232,13 @@ void knobSeq(int longDrip = 0) {
   int d = 1;
   if (longDrip){
     spinMotorSteps(stepPinKnob, dirPinKnob, OPEN, 1600, 70);
-    delay(1000);
+    delay(500);
     spinMotorSteps(stepPinKnob, dirPinKnob, CLOSE, 1600, 70);
   }
   else{
     while (true) {
       while(isBlocked()) {
         spinMotorSteps(stepPinKnob, dirPinKnob, OPEN, d, 75);
-      
         delay(10);
       }
       spinMotorSteps(stepPinKnob, dirPinKnob, OPEN, 4, 75); //Siyuan: changed the code to let the knob keep turning for a few steps before closing it, so as to ensure 1 drop to fall
@@ -249,7 +248,6 @@ void knobSeq(int longDrip = 0) {
        //delay(1000);
        //spinMotorSteps(stepPinKnob, dirPinKnob, CLOSE, d, 75);
       //}
-    
      if (!isBlocked()) {
         spinMotorDeg(stepPinKnob, dirPinKnob, CLOSE, 35, 75); 
         break;
@@ -260,17 +258,19 @@ void knobSeq(int longDrip = 0) {
 
 
 String dropSeq(int longDrip = 0) {
-    measureDropMM();
-
-    knobSeq(longDrip);
+    signalReceived();
+    measureDropMM(); //isBlocked()=1
+    knobSeq(longDrip); //isBlocked()=0
     delay(500);
-    double distance = measureDropMM();
-    while (distance < 0) {
-      knobSeq();
-      delay(500);
-      distance = measureDropMM();
-    }
-    
+    double distance = measureDropMM(); //isBlocked()=1, distance>0
+    //while (distance < 0) {
+      //knobSeq(); 
+      //delay(500);
+//      distance = measureDropMM();
+//    } Siyuan: commented this while loop cuz if everything runs smoothly it wouldnt even be executed
+
+    //double a=500;
+    //double pH=7;
     double a = filterAnalog(pHPin);
     double pH= currentPH(a);
     return String(distance, DP) + String(SEP) + String(a, DP) + String(SEP) +String(pH, DP);  //Siyuan: added the analog value display
