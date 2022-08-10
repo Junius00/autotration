@@ -205,25 +205,19 @@ void upSeq() {
 }
 
 double laserCalSeq() {
-  Serial.println(isBlocked());
-  Serial.println("dropping");
+  signalReceived();
   measureDropMM();
   
   int d = 7;
   int steps = 0;
-  Serial.println("turning knob");
   while (isBlocked()) {
     spinMotorSteps(stepPinKnob, dirPinKnob, OPEN, d, 70);
     steps += d;
-    Serial.println("Is blocked: " + String(isBlocked()));
     if (!isBlocked()) break;
     delay(10);
   }
-  Serial.println(isBlocked());
-  Serial.println("closing knob");
-  Serial.println(isBlocked());
   while (waitForFlag() != FLAG_STOP);
-
+  signalReceived();
   spinMotorSteps(stepPinKnob, dirPinKnob, CLOSE, steps, 75);
   return measureDropMM(); 
 }
@@ -269,11 +263,9 @@ String dropSeq(int longDrip = 0) {
 //      distance = measureDropMM();
 //    } Siyuan: commented this while loop cuz if everything runs smoothly it wouldnt even be executed
 
-    //double a=500;
-    //double pH=7;
-    double a = filterAnalog(pHPin);
-    double pH= currentPH(a);
-    return String(distance, DP) + String(SEP) + String(a, DP) + String(SEP) +String(pH, DP);  //Siyuan: added the analog value display
+    double a=500;
+    //double a = filterAnalog(pHPin);
+    return String(distance, DP) + String(SEP) + String(a, DP);  //Siyuan: added the analog value display
 }
 
 void loop() {
@@ -298,16 +290,16 @@ void loop() {
       break;
 
      case LASER_CALIBRATION_SEQ:
-      Serial.print(laserCalSeq());
+      Serial.println(laserCalSeq());
       
       break;
 
      case PH_CALIBRATION_SEQ:
-      signalReceived();
       while (true) {
+        signalReceived();
         double a=filterAnalog(pHPin);
         Serial.println(a);
-        Serial.println(currentPH(a));
+        //Serial.println(currentPH(a));
         //Serial.print(analogAvg(pHPin, PH_CALIBRATION_COUNT));
 
         int nextFlag = waitForFlag();

@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Titration results</title>
+	</head>
+	<body>
+		<table>
+			<tr>
+				<th>Volume titrated</th>
+				<th>pH</th>
+			</tr>
+			{% for row in titraResult %}
+				<tr>
+					<td>{{row[0]}}</td>
+					<td>{{row[1]}}</td>
+				</tr>
+			{% endfor %}
+		</table>
+		<p><a href="{{url_for('index')}}">Return to homepage</a></p>
+	</body>
+</html>

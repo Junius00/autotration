@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Drop Sequence</title>
+	</head>
+	<body>
+		<p>{{prompt}}</p>
+		<form method="POST" type="multipart/form-data">
+			<input type="submit" name="start" value="Start">
+			<input type="submit" name="switch" value="Switch titration mode">
+			<input type="submit" name="end" value="End">
+			<input type="submit" name="refresh" value="Refresh Results">
+			<input type="submit" name="clear" value="Clear previous titration data">
+		</form>
+		<table>
+			<tr>
+				<th>Volume titrated</th>
+				<th>pH</th>
+			</tr>
+			{% for row in titraResult %}
+				<tr>
+					<td>{{row[0]}}</td>
+					<td>{{row[1]}}</td>
+				</tr>
+			{% endfor %}
+		</table>
+		<p><a href="{{url_for('index')}}">Return to homepage</a></p>
+	</body>
+</html>

@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Homepage</title>
+	</head>
+	<body>
+		<p>Serial connected. Click the following buttons to start the experiment</p>
+		<form method="POST" enctype="multipart/form-data">
+			{% for ButtonTuple in ButtonList %}
+				{% if ButtonTuple[0] in linkButton %}
+					<a href="{{url_for(ButtonTuple[0])}}">
+						<input type="button" name="{{ButtonTuple[0]}}" value="{{ButtonTuple[1]}}">
+					</a>
+				{% else %}
+					<input type="submit" name="{{ButtonTuple[0]}}" value="{{ButtonTuple[1]}}">
+				{% endif %}
+			{% endfor %}
+		</form>
+	</body>
+</html>

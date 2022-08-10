@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>pH Calibration</title>
+	</head>
+	<body>
+		<p>{{prompt}}</p>
+		<p>
+			{% for item in testList %}
+				{{item}}
+			{% endfor %}
+		</p>
+		<form method="POST" enctype="multipart/form-data">
+			<input type="submit" name="pH4" value="Start with pH 4">
+			<input type="submit" name="pH7" value="Start with pH 7">
+			<input type="submit" name="clear" value="Clear previous calibration results">
+			<p>Current analog value measured: {{analog_pH}}</p>
+			<a href="{{url_for('index')}}">Return to homepage</a>
+		</form>
+	</body>
+</html>
