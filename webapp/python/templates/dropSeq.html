@@ -19,11 +19,14 @@
 			</tr>
 			{% for row in titraResult %}
 				<tr>
-					<td>{{row[0]}}</td>
-					<td>{{row[1]}}</td>
+					<td>{{'%0.2f'|format(row[0]|float)}}</td>
+					<td>{{'%0.2f'|format(row[1]|float)}}</td>
 				</tr>
 			{% endfor %}
 		</table>
+		{% if fname!="null" %}
+		<img src="{{url_for('get_graph',fname=fname)}}">
+		{% endif %}
 		<p><a href="{{url_for('index')}}">Return to homepage</a></p>
 	</body>
 </html>
