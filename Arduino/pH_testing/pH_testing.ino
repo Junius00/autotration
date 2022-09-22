@@ -7,7 +7,7 @@
 int a = 0;
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
   //+9V DC minimum to Arduino for stable analog readings
   analogReference(DEFAULT);
 

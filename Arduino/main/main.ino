@@ -16,6 +16,7 @@ const char SEP = '|';
 #define PH_CALIBRATION_SEQ 104
 #define DROP_SEQ 105
 #define LONG_DRIP_SEQ 106
+#define PH_STAB_SEQ 107
 
 #define LASER_CALIBRATION_COUNT 3
 #define PH_CALIBRATION_COUNT 3
@@ -29,7 +30,7 @@ const char SEP = '|';
 
 //pH parameters
 #define FILTER_FACTOR 4
-#define FILTER_PASSES 5000
+#define FILTER_PASSES 5000    //decreased to 2000 for faster testing, which is not working. Originally 5000
 #define FILTER_SETTLE 50
 #define FILTER_AVG 30
 
@@ -263,8 +264,8 @@ String dropSeq(int longDrip = 0) {
 //      distance = measureDropMM();
 //    } Siyuan: commented this while loop cuz if everything runs smoothly it wouldnt even be executed
 
-    double a=500;
-    //double a = filterAnalog(pHPin);
+    double a = filterAnalog(pHPin);
+    //double a = 500; //testing pH
     return String(distance, DP) + String(SEP) + String(a, DP);  //Siyuan: added the analog value display
 }
 
@@ -285,7 +286,8 @@ void loop() {
       break;
 
      case LOWER_UNTIL_STOP:
-      Serial.println(measureDropMM());
+      signalReceived();
+      measureDropMM();
       
       break;
 
@@ -315,6 +317,12 @@ void loop() {
      //Junius: Added flag 106 for long drip
      case LONG_DRIP_SEQ:
       Serial.println(dropSeq(1)); 
+      break;
+
+     case PH_STAB_SEQ:
+      for (int i=0; i<5; i++){
+        Serial.println(String(filterAnalog(pHPin),DP));      //Siyuan: pH won't stablise in first few drops. Added this line to test if taking a few probe measurements can stablise the pH
+      }
       break;
      
      default:

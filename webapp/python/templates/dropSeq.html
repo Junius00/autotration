@@ -16,11 +16,15 @@
 			<tr>
 				<th>Volume titrated</th>
 				<th>pH</th>
+				<th>Delta</th>
+				<th>Gradient</th>
 			</tr>
 			{% for row in titraResult %}
 				<tr>
 					<td>{{'%0.2f'|format(row[0]|float)}}</td>
 					<td>{{'%0.2f'|format(row[1]|float)}}</td>
+					<td>{{'%0.2f'|format(row[2]|float)}}</td>
+					<td>{{'%0.2f'|format(row[3]|float)}}</td>
 				</tr>
 			{% endfor %}
 		</table>

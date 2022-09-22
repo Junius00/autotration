@@ -2,6 +2,7 @@ import flask, serial, time, json, io
 from flask import Flask, render_template, request, send_file, redirect
 from os import path
 import numpy as np
+from scipy.optimize import curve_fit
 #from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib import pyplot as plt
 plt.switch_backend('agg')
@@ -9,7 +10,7 @@ plt.switch_backend('agg')
 app=Flask(__name__)
 
 #Homepage global variables
-codeDict={"Up":"101", "Lower": "102", "Laser":"103", "pH": "104", "Stop":"201", "Drop":"105", "LongDrip":"106"}
+codeDict={"Up":"101", "Lower": "102", "Laser":"103", "pH": "104", "Stop":"201", "Drop":"105", "LongDrip":"106", "pHStab":"107"}
 ButtonTable={'Up':"Up",'Lower':"Lower until meets float",'Laser':"Calibrate Laser",'pH':"Calibrate pH",'Stop':"Stop",'Drop':"Start Drop Sequence"}
 ButtonList=list(ButtonTable.items())
 linkButton=["Laser","pH","Drop"]
@@ -33,6 +34,10 @@ titraResult=[]
 dropEnd=0
 mode="LongDrip"
 prev_mode="Drop"
+accVolume=0
+pH0=0.2
+gradient0=1
+numpyResult=np.array([])                #empty np array for storing data. When filled, columns are [volume, pH, delta, gradient]
 
 #Value saving functions
 FNAME_DEFAULT = './values.json'
@@ -96,21 +101,73 @@ def calpH(a):
     return gradient*a+y_intercept
 
 #pH plot function
-def pHplot():
+def sigmoid(x, L ,x0, k, b):
+    y = L / (1 + np.exp(-k*(x-x0))) + b
+    return (y)
+
+def pHplot(withCurve=0):
     global titraResult
     if not titraResult:
         return "null"
     
     tR = np.array(titraResult)
-    
     vol=tR[:,0]
     pH=tR[:,1]
-    plt.plot(vol, pH, "b.")
+
+    plt.plot(vol, pH, "b.", label="data")
+    if withCurve:
+        p0 = [max(pH), np.median(vol),1,min(pH)]
+        popt, pcov = curve_fit(sigmoid, vol, pH, p0, method='dogbox')
+        x=np.linspace(min(vol), max(vol), 1000)
+        y=sigmoid(x, *popt)
+        plt.plot(x,y,label="fit")
 
     fname = './pHgraph.png'
     plt.savefig(fname)
 
     return fname
+
+#Numpy processing function
+def getGradient(numpyResult):                                   #calculates gradient of the titration graph
+    if np.shape(numpyResult)==(1,4):
+        return numpyResult
+    else:
+        rawData=numpyResult[:,:3]
+        gradient=np.transpose(np.array([np.gradient(rawData[:,1], rawData[:,0])]))
+        return np.append(rawData, gradient, axis=1)
+
+def rowAppend(numpyResult, row):                                #append list 'row' to the np array 'numpyResult'
+    if np.shape(numpyResult)==(0,):
+        return np.array([row])
+    else:
+        pHdelta=row[1]-numpyResult[-1,1]
+        row[2]=pHdelta
+        return np.append(numpyResult, np.array([row]), axis=0)
+
+#Drop seq change mode function
+def checkpH(numpyResults, pH0):
+    if np.shape(numpyResult) in [(0,),(1,4)]:
+        return False
+    else:
+        pHdifference=numpyResults[-1][1]-numpyResults[-2][1]
+        return pHdifference>=pH0
+
+def checkGradient(numpyResults, gradient0):
+    if np.shape(numpyResult)==(0,):
+        return False
+    else:
+        return numpyResults[-1][-1]>=gradient0
+
+#Graph fit functions
+
+#pH stabilisation functions
+def pHstab(n):
+    global codeDict
+    SerialWrite(codeDict["pHStab"])
+    stabList=[]
+    for i in range(n):
+        stabList.append(calpH(SerialReceiveln()))
+    return stabList
 
 #Webapp functions
 @app.route("/",methods=["GET","POST"])
@@ -209,7 +266,7 @@ def Laser():
 
 @app.route("/Drop/", methods=["GET","POST"])
 def Drop():
-    global titraResult, dropEnd, conversion, mode, prev_mode
+    global titraResult, dropEnd, conversion, mode, prev_mode, accVolume, numpyResult, pH0, gradient0
     if arduino==None:
         return redirect("http://127.0.0.1:5000")
     else:
@@ -220,21 +277,40 @@ def Drop():
             prompt="Click 'End' to complete titration. Click 'Refresh Results' to check titration progress."
             for action in request.form:
                 if action=="start":
+                    #pHstab(2)
                     while not dropEnd:
+                        #Switch from long drip to dropwise
+                        if (checkpH(numpyResult, pH0) or checkGradient(numpyResult, gradient0)) and mode=="LongDrip":
+                            temp=prev_mode
+                            prev_mode=mode
+                            mode=temp
+                        #Switch from dropwise to long drip
+                        if (not (checkpH(numpyResult, pH0) or checkGradient(numpyResult, gradient0))) and mode=="Drop":
+                            temp=prev_mode
+                            prev_mode=mode
+                            mode=temp
                         print(mode)
                         SerialWrite(codeDict[mode])
                         print("Board return: ", SerialReceiveln())
                         result = SerialReceiveln()
                         print(result)
                         result = result.split("|")     #assuming the result comes in the format of "distance|pH"
-                        result[0]=float(result[0])*conversion
+                        delta=float(result[0])*conversion
+                        accVolume+=delta
+                        result[0]=accVolume
                         result[1]=calpH(result[1])
-                        titraResult.append(result)       #'titraresult' stores data in the formate of [[volume,pH],[volume,pH],...]
-                        print(result)    
-                    print(titraResult)
+                        result.append(0)
+                        result.append(0)
+                        numpyResult=rowAppend(numpyResult, result)
+                        print(numpyResult)
+                        numpyResult=getGradient(numpyResult)
+                        #titraResult.append(result)       #'titraresult' stores data in the formate of [[volume,pH],[volume,pH],...]
+                        print(result)
+                    print(numpyResult)
                 elif action=="end":
                     dropEnd=1
                     prompt="Drop sequence ended. Return to homepage for more options."
+                    np.savetxt("titraResult.csv", numpyResult, fmt="%10.3f", delimiter=",")
                 elif action=="switch":
                     temp=prev_mode
                     prev_mode=mode
@@ -244,9 +320,11 @@ def Drop():
                     dropEnd=0
                     mode="LongDrip"
                     prev_mode="Drop"
-
-            fname = pHplot()
+                    accVolume=0
+                    numpyResult=np.array([])
+            fname = pHplot(dropEnd)
             save_json()
+            titraResult=numpyResult.tolist()
         return render_template("dropSeq.html", prompt=prompt, titraResult=titraResult, fname=fname)
 
 def plot_png():
