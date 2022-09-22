@@ -29,9 +29,9 @@ const char SEP = '|';
 
 //pH parameters
 #define FILTER_FACTOR 4
-#define FILTER_PASSES 5000
-#define FILTER_SETTLE 50
-#define FILTER_AVG 30
+#define FILTER_PASSES 7500
+#define FILTER_SETTLE 60
+#define FILTER_AVG 40
 
 //motor parameters
 #define enPinVert 36
@@ -186,7 +186,10 @@ double measureDropMM() {
   double d = 0.01;
   double s = 0;
   
-  if (isBlocked()) return -1;
+  if (isBlocked()) {
+    laserOff();
+    return -1;
+  }
   
   while(!isBlocked()) {
     spinMotorMM(stepPinVert, dirPinVert, DOWN, d, 75);
@@ -292,6 +295,7 @@ void loop() {
     case UP_UNTIL_STOP:
       signalReceived();
 
+      laserOn();
       while (true) {
         while(!Serial.available()) upSeq();
         if (Serial.readString().toInt() == FLAG_STOP){
@@ -299,6 +303,7 @@ void loop() {
           break;
         }
       }
+      laserOff();
       break;
 
      case LOWER_UNTIL_STOP:
