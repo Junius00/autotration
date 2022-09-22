@@ -186,7 +186,10 @@ double measureDropMM() {
   double d = 0.01;
   double s = 0;
   
-  if (isBlocked()) return -1;
+  if (isBlocked()) {
+    laserOff();
+    return -1;
+  }
   
   while(!isBlocked()) {
     spinMotorMM(stepPinVert, dirPinVert, DOWN, d, 75);
