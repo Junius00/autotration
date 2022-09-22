@@ -16,7 +16,6 @@ const char SEP = '|';
 #define PH_CALIBRATION_SEQ 104
 #define DROP_SEQ 105
 #define LONG_DRIP_SEQ 106
-#define PH_STAB_SEQ 107
 
 #define LASER_CALIBRATION_COUNT 3
 #define PH_CALIBRATION_COUNT 3
@@ -30,9 +29,9 @@ const char SEP = '|';
 
 //pH parameters
 #define FILTER_FACTOR 4
-#define FILTER_PASSES 5000    //decreased to 2000 for faster testing, which is not working. Originally 5000
-#define FILTER_SETTLE 50
-#define FILTER_AVG 30
+#define FILTER_PASSES 7500
+#define FILTER_SETTLE 60
+#define FILTER_AVG 40
 
 //motor parameters
 #define enPinVert 36
@@ -79,7 +78,6 @@ void setup() {
   digitalWrite(enPinVert, HIGH);
   digitalWrite(enPinKnob, HIGH);
 
-  digitalWrite(laserDiodePin, HIGH);
   Serial.begin(BAUDRATE);
 }
 
@@ -94,6 +92,15 @@ void blinkTestLight(int d) {
 
 int isBlocked() {
   return digitalRead(laserSensorPin);
+}
+
+void laserOn() {
+  digitalWrite(laserDiodePin, HIGH);
+  delay(50);
+}
+
+void laserOff() {
+  digitalWrite(laserDiodePin, LOW);
 }
 
 //Serial functions
@@ -175,6 +182,7 @@ double currentPH(double a) {    //Siyuan: added this to convert analog to pH
 
 //Measurement
 double measureDropMM() {
+  laserOn();
   double d = 0.01;
   double s = 0;
   
@@ -196,7 +204,8 @@ double measureDropMM() {
   }
 
   spinMotorMM(stepPinVert, dirPinVert, DOWN, VERT_BUFFER, 10);
-  
+
+  laserOff();
   return s * d + 0.35;
 }
 
@@ -211,6 +220,8 @@ double laserCalSeq() {
   
   int d = 7;
   int steps = 0;
+  laserOn();
+  
   while (isBlocked()) {
     spinMotorSteps(stepPinKnob, dirPinKnob, OPEN, d, 70);
     steps += d;
@@ -220,6 +231,8 @@ double laserCalSeq() {
   while (waitForFlag() != FLAG_STOP);
   signalReceived();
   spinMotorSteps(stepPinKnob, dirPinKnob, CLOSE, steps, 75);
+  laserOff();
+  
   return measureDropMM(); 
 }
 
@@ -231,6 +244,8 @@ void knobSeq(int longDrip = 0) {
     spinMotorSteps(stepPinKnob, dirPinKnob, CLOSE, 1600, 70);
   }
   else{
+    laserOn();
+    
     while (true) {
       while(isBlocked()) {
         spinMotorSteps(stepPinKnob, dirPinKnob, OPEN, d, 75);
@@ -248,6 +263,7 @@ void knobSeq(int longDrip = 0) {
         break;
      }
    }
+   laserOff();
  }
 }
 
@@ -264,8 +280,8 @@ String dropSeq(int longDrip = 0) {
 //      distance = measureDropMM();
 //    } Siyuan: commented this while loop cuz if everything runs smoothly it wouldnt even be executed
 
-    double a = filterAnalog(pHPin);
-    //double a = 500; //testing pH
+    double a=500;
+    //double a = filterAnalog(pHPin);
     return String(distance, DP) + String(SEP) + String(a, DP);  //Siyuan: added the analog value display
 }
 
@@ -276,6 +292,7 @@ void loop() {
     case UP_UNTIL_STOP:
       signalReceived();
 
+      laserOn();
       while (true) {
         while(!Serial.available()) upSeq();
         if (Serial.readString().toInt() == FLAG_STOP){
@@ -283,11 +300,11 @@ void loop() {
           break;
         }
       }
+      laserOff();
       break;
 
      case LOWER_UNTIL_STOP:
-      signalReceived();
-      measureDropMM();
+      Serial.println(measureDropMM());
       
       break;
 
@@ -317,12 +334,6 @@ void loop() {
      //Junius: Added flag 106 for long drip
      case LONG_DRIP_SEQ:
       Serial.println(dropSeq(1)); 
-      break;
-
-     case PH_STAB_SEQ:
-      for (int i=0; i<5; i++){
-        Serial.println(String(filterAnalog(pHPin),DP));      //Siyuan: pH won't stablise in first few drops. Added this line to test if taking a few probe measurements can stablise the pH
-      }
       break;
      
      default:
