@@ -78,7 +78,6 @@ void setup() {
   digitalWrite(enPinVert, HIGH);
   digitalWrite(enPinKnob, HIGH);
 
-  digitalWrite(laserDiodePin, HIGH);
   Serial.begin(BAUDRATE);
 }
 
@@ -93,6 +92,15 @@ void blinkTestLight(int d) {
 
 int isBlocked() {
   return digitalRead(laserSensorPin);
+}
+
+void laserOn() {
+  digitalWrite(laserDiodePin, HIGH);
+  delay(50);
+}
+
+void laserOff() {
+  digitalWrite(laserDiodePin, LOW);
 }
 
 //Serial functions
@@ -174,6 +182,7 @@ double currentPH(double a) {    //Siyuan: added this to convert analog to pH
 
 //Measurement
 double measureDropMM() {
+  laserOn();
   double d = 0.01;
   double s = 0;
   
@@ -195,7 +204,8 @@ double measureDropMM() {
   }
 
   spinMotorMM(stepPinVert, dirPinVert, DOWN, VERT_BUFFER, 10);
-  
+
+  laserOff();
   return s * d + 0.35;
 }
 
@@ -210,6 +220,8 @@ double laserCalSeq() {
   
   int d = 7;
   int steps = 0;
+  laserOn();
+  
   while (isBlocked()) {
     spinMotorSteps(stepPinKnob, dirPinKnob, OPEN, d, 70);
     steps += d;
@@ -219,6 +231,8 @@ double laserCalSeq() {
   while (waitForFlag() != FLAG_STOP);
   signalReceived();
   spinMotorSteps(stepPinKnob, dirPinKnob, CLOSE, steps, 75);
+  laserOff();
+  
   return measureDropMM(); 
 }
 
@@ -230,6 +244,8 @@ void knobSeq(int longDrip = 0) {
     spinMotorSteps(stepPinKnob, dirPinKnob, CLOSE, 1600, 70);
   }
   else{
+    laserOn();
+    
     while (true) {
       while(isBlocked()) {
         spinMotorSteps(stepPinKnob, dirPinKnob, OPEN, d, 75);
@@ -247,6 +263,7 @@ void knobSeq(int longDrip = 0) {
         break;
      }
    }
+   laserOff();
  }
 }
 
