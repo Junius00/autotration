@@ -10,8 +10,8 @@ plt.switch_backend('agg')
 app=Flask(__name__)
 
 #Homepage global variables
-codeDict={"Up":"101", "Lower": "102", "Laser":"103", "pH": "104", "Stop":"201", "Drop":"105", "LongDrip":"106", "pHStab":"107"}
-ButtonTable={'Up':"Up",'Lower':"Lower until meets float",'Laser':"Calibrate Laser",'pH':"Calibrate pH",'Stop':"Stop",'Drop':"Start Drop Sequence"}
+codeDict={"Up":"101", "Lower": "102", "Laser":"103", "pH": "104", "Stop":"201", "Drop":"105", "LongDrip":"106", "pHStab":"107", "LaserOn":"108"}
+ButtonTable={'Up':"Up",'Lower':"Lower Until Meets Float",'Laser':"Calibrate Laser",'pH':"Calibrate pH",'Stop':"Stop",'Drop':"Start Drop Sequence", 'LaserOn':"Turn on Laser for 5s"}
 ButtonList=list(ButtonTable.items())
 linkButton=["Laser","pH","Drop"]
 
@@ -37,6 +37,7 @@ prev_mode="Drop"
 accVolume=0
 pH0=0.2
 gradient0=1
+pH1=0.05
 numpyResult=np.array([])                #empty np array for storing data. When filled, columns are [volume, pH, delta, gradient]
 
 #Value saving functions
@@ -268,7 +269,7 @@ def Laser():
 
 @app.route("/Drop/", methods=["GET","POST"])
 def Drop():
-    global titraResult, dropEnd, conversion, mode, prev_mode, accVolume, numpyResult, pH0, gradient0
+    global titraResult, dropEnd, conversion, mode, prev_mode, accVolume, numpyResult, pH0, gradient0, pH1
     if arduino==None:
         return redirect("http://127.0.0.1:5000")
     else:
@@ -282,12 +283,12 @@ def Drop():
                     #pHstab(2)
                     while not dropEnd:
                         #Switch from long drip to dropwise
-                        if (checkpH(numpyResult, pH0) or checkGradient(numpyResult, gradient0)) and mode=="LongDrip":
+                        if (checkpH(numpyResult, pH0) or checkGradient(numpyResult, gradient0)) and mode=="LongDrip" and numpyResult[-1,1]<7:
                             temp=prev_mode
                             prev_mode=mode
                             mode=temp
                         #Switch from dropwise to long drip
-                        if (not (checkpH(numpyResult, pH0) or checkGradient(numpyResult, gradient0))) and mode=="Drop":
+                        if (not (checkpH(numpyResult, pH1) or checkGradient(numpyResult, gradient0))) and mode=="Drop" and numpyResult[-1,1]>7:
                             temp=prev_mode
                             prev_mode=mode
                             mode=temp
@@ -312,7 +313,10 @@ def Drop():
                 elif action=="end":
                     dropEnd=1
                     prompt="Drop sequence ended. Return to homepage for more options."
-                    np.savetxt("titraResult.csv", numpyResult, fmt="%10.3f", delimiter=",")
+                    try:
+                        np.savetxt("titraResult.csv", numpyResult, fmt="%10.3f", delimiter=",")
+                    except:
+                        prompt=prompt+"\nCouldn't save titration data. Please close the file before clicking 'end' again."
                 elif action=="switch":
                     temp=prev_mode
                     prev_mode=mode

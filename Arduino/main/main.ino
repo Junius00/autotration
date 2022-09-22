@@ -18,6 +18,7 @@ const char SEP = '|';
 #define PH_CALIBRATION_SEQ 104
 #define DROP_SEQ 105
 #define LONG_DRIP_SEQ 106
+#define LASER_ON 108
 
 #define LASER_CALIBRATION_COUNT 3
 #define PH_CALIBRATION_COUNT 3
@@ -362,7 +363,15 @@ void loop() {
      case LONG_DRIP_SEQ:
       Serial.println(dropSeq(1)); 
       break;
-     
+
+     //Siyuan: Added flag 108 for turning on laser 5 secs (for adjusting light sensor positions)
+     case LASER_ON:
+      laserOn();
+      delay(5000);
+      laserOff();
+      signalReceived();
+      break;
+      
      default:
       Serial.println(FLAG_INVALID);
       break;

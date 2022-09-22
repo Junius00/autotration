@@ -1,0 +1,23 @@
+body {
+	text-align: center;
+	margin: auto;
+}
+
+form{
+	margin: 12px 0;
+}
+
+table, th, td {
+	border: 1px solid;
+	margin-left: auto;
+	margin-right: auto;
+	border-collapse: collapse;
+}
+
+th, td{
+	padding: 6px;
+}
+
+img {
+	margin: auto;
+}
