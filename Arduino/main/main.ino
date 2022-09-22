@@ -1,3 +1,5 @@
+#include <SimpleKalmanFilter.h>
+
 #define BAUDRATE 115200
 
 //serial flags
@@ -29,9 +31,9 @@ const char SEP = '|';
 
 //pH parameters
 #define FILTER_FACTOR 4
-#define FILTER_PASSES 7500
-#define FILTER_SETTLE 60
-#define FILTER_AVG 40
+#define FILTER_PASSES 5000
+#define FILTER_AVG 15
+#define FILTER_THRESH 3
 
 //motor parameters
 #define enPinVert 36
@@ -56,6 +58,9 @@ const char SEP = '|';
 //knob parameters
 #define OPEN LOW
 #define CLOSE HIGH
+
+//Kalman Filter
+SimpleKalmanFilter kf(100, 50, 0.01);
 
 void setup() {
   pinMode(testPin, OUTPUT);
@@ -150,28 +155,47 @@ int filterResult(int a) {
   return a >> FILTER_FACTOR;
 }
 
-double filterAnalog(int analogPin) {
-  unsigned long total = 0;
-  int a = 0;
-  
-  for (int j = 0; j < FILTER_SETTLE + FILTER_AVG; j++) {
-    for (int i = 0; i < FILTER_PASSES; i++) {
-      a = a - (filterResult(a)) + analogRead(analogPin);
-    }
+int passArr(int *vals, int n) {
+   int valMin = 1024, valMax = -1;
+   int v;
+   for (int i = 0; i < n; i++) {
+    v = vals[i];
+    if (v < valMin) valMin = v;
+    if (v > valMax) valMax = v;
+   }
 
-    if (j >= FILTER_SETTLE) total += filterResult(a);
-  }
-
-  return double(total) / FILTER_AVG;
+   return (valMax - valMin) < FILTER_THRESH;
 }
 
-double analogAvg(int analogPin, int avgCount) {
+double avgArr(int *vals, int n) {
   double total = 0;
-
-  for (int i = 0; i < avgCount; i++) {
-    total += filterAnalog(analogPin);
+  
+  for (int i = 0; i < n; i++) {
+    total += (double) vals[i];  
   }
-  return total / avgCount;
+
+  return total / (double) n;
+}
+
+double filterAnalog(int analogPin) {
+  int count = 0, pass = 0;
+  int *prevVals = (int *) malloc(sizeof(int) * FILTER_AVG);
+
+  int a = kf.updateEstimate(analogRead(analogPin));
+  while (!pass) {
+    for (int i = 0; i < FILTER_PASSES; i++) a = a - (filterResult(a)) + kf.updateEstimate(analogRead(analogPin));
+    
+    memcpy(&prevVals[1], prevVals, sizeof(int) * (FILTER_AVG - 1));
+    prevVals[0] = filterResult(a);
+
+    if (count++ < FILTER_AVG) continue;
+    
+    pass = passArr(prevVals, FILTER_AVG);
+  }
+  
+  double avg = avgArr(prevVals, FILTER_AVG);
+  free(prevVals);
+  return avg;
 }
 
 //pH conversion from analog
@@ -283,8 +307,8 @@ String dropSeq(int longDrip = 0) {
 //      distance = measureDropMM();
 //    } Siyuan: commented this while loop cuz if everything runs smoothly it wouldnt even be executed
 
-    double a=500;
-    //double a = filterAnalog(pHPin);
+    //double a=500;
+    double a = filterAnalog(pHPin);
     return String(distance, DP) + String(SEP) + String(a, DP);  //Siyuan: added the analog value display
 }
 
@@ -319,7 +343,7 @@ void loop() {
      case PH_CALIBRATION_SEQ:
       while (true) {
         signalReceived();
-        double a=filterAnalog(pHPin);
+        double a = filterAnalog(pHPin);
         Serial.println(a);
         //Serial.println(currentPH(a));
         //Serial.print(analogAvg(pHPin, PH_CALIBRATION_COUNT));

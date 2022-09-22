@@ -105,8 +105,7 @@ def sigmoid(x, L ,x0, k, b):
     y = L / (1 + np.exp(-k*(x-x0))) + b
     return (y)
 
-def pHplot(withCurve=0):
-    global titraResult
+def pHplot(titraResult, withCurve=0):
     if not titraResult:
         return "null"
     
@@ -116,11 +115,14 @@ def pHplot(withCurve=0):
 
     plt.plot(vol, pH, "b.", label="data")
     if withCurve:
-        p0 = [max(pH), np.median(vol),1,min(pH)]
-        popt, pcov = curve_fit(sigmoid, vol, pH, p0, method='dogbox')
-        x=np.linspace(min(vol), max(vol), 1000)
-        y=sigmoid(x, *popt)
-        plt.plot(x,y,label="fit")
+        try:
+            p0 = [max(pH), np.median(vol),1,min(pH)]
+            popt, pcov = curve_fit(sigmoid, vol, pH, p0, method='dogbox')
+            x=np.linspace(min(vol), max(vol), 1000)
+            y=sigmoid(x, *popt)
+            plt.plot(x,y,label="fit")
+        except:
+            print("could not fit curve")
 
     fname = './pHgraph.png'
     plt.savefig(fname)
@@ -322,7 +324,7 @@ def Drop():
                     prev_mode="Drop"
                     accVolume=0
                     numpyResult=np.array([])
-            fname = pHplot(dropEnd)
+            fname = pHplot(titraResult, dropEnd)
             save_json()
             titraResult=numpyResult.tolist()
         return render_template("dropSeq.html", prompt=prompt, titraResult=titraResult, fname=fname)
