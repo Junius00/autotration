@@ -19,7 +19,7 @@ const char SEP = '|';
 #define DROP_SEQ 105
 #define LONG_DRIP_SEQ 106
 #define DEMO_SEQ 107
-#define LASER_ON 108
+#define LASER_ON_SEQ 108
 
 #define LASER_CALIBRATION_COUNT 3
 #define PH_CALIBRATION_COUNT 3
@@ -314,7 +314,7 @@ String dropSeq(int longDrip = 0) {
     return String(distance, DP) + String(SEP) + String(a, DP);  //Siyuan: added the analog value display
 }
 
-void demoSeq() {
+String demoSeq() {
   signalReceived();
   measureDropMM();
   knobSeq(0);
@@ -387,6 +387,7 @@ void loop() {
      case DEMO_SEQ:
       Serial.println(demoSeq());
       break;
+      
      //Siyuan: Added flag 108 for turning on laser 5 secs (for adjusting light sensor positions)
      case LASER_ON_SEQ:
       laserOnSeq();

@@ -10,7 +10,7 @@ plt.switch_backend('agg')
 app=Flask(__name__)
 
 #Homepage global variables
-codeDict={"Up":"101", "Lower": "102", "Laser":"103", "pH": "104", "Stop":"201", "Drop":"105", "LongDrip":"106", "pHStab":"107", "LaserOn":"108"}
+codeDict={"Up":"101", "Lower": "102", "Laser":"103", "pH": "104", "Stop":"201", "Drop":"105", "LongDrip":"106", "Demo":"107", "LaserOn":"108"}
 ButtonTable={'Up':"Up",'Lower':"Lower Until Meets Float",'Laser':"Calibrate Laser",'pH':"Calibrate pH",'Stop':"Stop",'Drop':"Start Drop Sequence", 'LaserOn':"Turn on Laser for 5s"}
 ButtonList=list(ButtonTable.items())
 linkButton=["Laser","pH","Drop"]
@@ -279,19 +279,21 @@ def Drop():
         elif request.method=="POST":
             prompt="Click 'End' to complete titration. Click 'Refresh Results' to check titration progress."
             for action in request.form:
-                if action=="start":
-                    #pHstab(2)
+                if action=="start" or action=="demo":
                     while not dropEnd:
                         #Switch from long drip to dropwise
-                        if (checkpH(numpyResult, pH0) or checkGradient(numpyResult, gradient0)) and mode=="LongDrip" and numpyResult[-1,1]<7:
-                            temp=prev_mode
-                            prev_mode=mode
-                            mode=temp
+                        if action=="start":
+                            if (checkpH(numpyResult, pH0) or checkGradient(numpyResult, gradient0)) and mode=="LongDrip" and numpyResult[-1,1]<7:
+                                temp=prev_mode
+                                prev_mode=mode
+                                mode=temp
                         #Switch from dropwise to long drip
-                        if (not (checkpH(numpyResult, pH1) or checkGradient(numpyResult, gradient0))) and mode=="Drop" and numpyResult[-1,1]>7:
-                            temp=prev_mode
-                            prev_mode=mode
-                            mode=temp
+                            if (not (checkpH(numpyResult, pH1) or checkGradient(numpyResult, gradient0))) and mode=="Drop" and numpyResult[-1,1]>7:
+                                temp=prev_mode
+                                prev_mode=mode
+                                mode=temp
+                        else:
+                            mode="Demo"
                         print(mode)
                         SerialWrite(codeDict[mode])
                         print("Board return: ", SerialReceiveln())
