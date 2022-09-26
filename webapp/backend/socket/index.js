@@ -9,10 +9,7 @@ const onSerialIn = (socket, board, data) => {
         return;
     }
 
-    const onResp = (valStr) => {
-        socket.emit(SERIAL_OUT, valStr);
-    }
-    boardWrite(board, data, onResp);
+    boardWrite(board, data);
 }
 
 module.exports = { onSerialIn };

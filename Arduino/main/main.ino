@@ -3,6 +3,7 @@
 #define BAUDRATE 115200
 
 //serial flags
+#define FLAG_INIT 69
 #define FLAG_OK 200
 #define FLAG_STOP 201
 #define FLAG_INVALID 404
@@ -86,6 +87,7 @@ void setup() {
   digitalWrite(enPinKnob, HIGH);
 
   Serial.begin(BAUDRATE);
+  Serial.print(FLAG_INIT);
 }
 
 //I/O functions
@@ -265,7 +267,7 @@ double laserCalSeq() {
   return measureDropMM(); 
 }
 
-void knobSeq(int longDrip = 0) {
+void knobSeq(int extraSteps, int longDrip = 0) {
   int d = 1;
   if (longDrip){
     spinMotorSteps(stepPinKnob, dirPinKnob, OPEN, 1600, 70);
@@ -280,7 +282,7 @@ void knobSeq(int longDrip = 0) {
         spinMotorSteps(stepPinKnob, dirPinKnob, OPEN, d, 75);
         delay(10);
       }
-      spinMotorSteps(stepPinKnob, dirPinKnob, OPEN, 4, 75); //Siyuan: changed the code to let the knob keep turning for a few steps before closing it, so as to ensure 1 drop to fall
+      spinMotorSteps(stepPinKnob, dirPinKnob, OPEN, extraSteps, 75); //Siyuan: changed the code to let the knob keep turning for a few steps before closing it, so as to ensure 1 drop to fall
   
       //if (longDrip) {
        //spinMotorSteps(stepPinKnob, dirPinKnob, OPEN, d, 70);
@@ -300,7 +302,7 @@ void knobSeq(int longDrip = 0) {
 String dropSeq(int longDrip = 0) {
     signalReceived();
     measureDropMM(); //isBlocked()=1
-    knobSeq(longDrip); //isBlocked()=0
+    knobSeq(4, longDrip); //extraSteps: 4 for NaOH, isBlocked()=0
     delay(500);
     double distance = measureDropMM(); //isBlocked()=1, distance>0
     //while (distance < 0) {
@@ -317,11 +319,11 @@ String dropSeq(int longDrip = 0) {
 String demoSeq() {
   signalReceived();
   measureDropMM();
-  knobSeq(0);
+  knobSeq(50, 0);
   delay(500);
   double distance = measureDropMM(), a = 0;
 
-  delay(3000); //artificial delay
+  delay(2000); //artificial delay
   return String(distance, DP) + String(SEP) + String(a, DP);
 }
 
@@ -387,7 +389,6 @@ void loop() {
      case DEMO_SEQ:
       Serial.println(demoSeq());
       break;
-      
      //Siyuan: Added flag 108 for turning on laser 5 secs (for adjusting light sensor positions)
      case LASER_ON_SEQ:
       laserOnSeq();

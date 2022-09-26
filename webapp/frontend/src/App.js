@@ -1,9 +1,7 @@
 import './App.css';
 import React from 'react';
-import { writeSerial } from './socket';
-import { SERIAL_OUT } from './constants/sockets';
 import { io } from 'socket.io-client';
-import { FLAG_ERROR } from './constants/flags';
+import DemoWidget from './widgets/DemoWidget';
 
 class App extends React.Component {
   constructor(props) {
@@ -11,35 +9,33 @@ class App extends React.Component {
 
     this.state = {
       count: 0,
-      serial: 'Please start the backend server.'
+      serial: true
     };
 
   }
 
-  componentDidMount() {
+  mountSocket() {
     if (this.socket) return;
 
     this.socket = io.connect('ws://localhost:8888');
 
-    this.socket.on(SERIAL_OUT, (val) => {
-      console.log('received', val);
-      this.setState({ serial: (val === FLAG_ERROR) ? 'Please check board connection.' : val });
-    });
-
     this.socket.on('disconnect', () => {
-      //window.open('about:blank', '_self');
-      this.setState({ serial: 'This app has been disconnected because another instance has been opened. Please close this tab.' });
-    })
+      window.open('about:blank', '_self');
+      this.setState({ serial: false });
+    });
+  }
+
+  componentDidMount() {
+    this.mountSocket();
   }
 
   render() {
+    if (!this.state.serial) return <p>This app has been disconnected.</p>;
+    
+    if (!this.socket) this.mountSocket();
     return (
       <div className="App">
-        <p>{this.state.serial}</p>
-        <input onChange={(event) => {
-          this.setState({ count: parseInt(event.target.value) });
-          }}/>
-        <button onClick={() => writeSerial(this.socket, this.state.count)}>Send signal</button>
+        <DemoWidget socket={this.socket} />
       </div>
     );
   }

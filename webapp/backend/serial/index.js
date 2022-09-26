@@ -24,17 +24,16 @@ const initBoard = (onBoot, hasBoard = false, path = PORT, baudRate = BAUDRATE) =
 
 const waitResp = (board, onResp) => {
     const respWrapper = (val) => {
-        console.log('Serial returned:', val.toString());
-        onResp(val.toString());
-        board.removeListener('data', respWrapper);
+        val = val.toString().trim();
+        console.log('Serial returned:', val);
+        onResp(val);
     }
+
     board.on('data', respWrapper);
 }
-const boardWrite = (board, data, onResp = null) => {
+const boardWrite = (board, data) => {
     console.log('Serial writing:', data.toString());
     board.write(data.toString());
-
-    if (onResp) waitResp(board, onResp);
 }
 
 module.exports = { initBoard, waitResp, boardWrite };
