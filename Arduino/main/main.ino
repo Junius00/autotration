@@ -18,6 +18,7 @@ const char SEP = '|';
 #define PH_CALIBRATION_SEQ 104
 #define DROP_SEQ 105
 #define LONG_DRIP_SEQ 106
+#define DEMO_SEQ 107
 #define LASER_ON 108
 
 #define LASER_CALIBRATION_COUNT 3
@@ -313,6 +314,24 @@ String dropSeq(int longDrip = 0) {
     return String(distance, DP) + String(SEP) + String(a, DP);  //Siyuan: added the analog value display
 }
 
+void demoSeq() {
+  signalReceived();
+  measureDropMM();
+  knobSeq(0);
+  delay(500);
+  double distance = measureDropMM(), a = 0;
+
+  delay(3000); //artificial delay
+  return String(distance, DP) + String(SEP) + String(a, DP);
+}
+
+void laserOnSeq() {
+    laserOn();
+    delay(5000);
+    laserOff();
+    signalReceived();
+}
+
 void loop() {
   int dec = waitForFlag();
 
@@ -364,12 +383,13 @@ void loop() {
       Serial.println(dropSeq(1)); 
       break;
 
+     //Junius: Added flag 107 for demo
+     case DEMO_SEQ:
+      Serial.println(demoSeq());
+      break;
      //Siyuan: Added flag 108 for turning on laser 5 secs (for adjusting light sensor positions)
-     case LASER_ON:
-      laserOn();
-      delay(5000);
-      laserOff();
-      signalReceived();
+     case LASER_ON_SEQ:
+      laserOnSeq();
       break;
       
      default:
