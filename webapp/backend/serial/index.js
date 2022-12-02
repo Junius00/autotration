@@ -1,10 +1,13 @@
 const { SerialPort } = require("serialport");
-const { PORT, BAUDRATE, FLAG_INIT } = require('../constants/serial');
+const { BAUDRATE, FLAG_INIT } = require('../constants/serial');
 
-const initBoard = (onBoot, hasBoard = false, path = PORT, baudRate = BAUDRATE) => {
+const initBoard = (path, onBoot, hasBoard = false, baudRate = BAUDRATE) => {
     if (hasBoard) return;
 
-    const board = new SerialPort({ path, baudRate }, (err) => {if (err) console.log(err.message);});
+    const board = new SerialPort({ path, baudRate }, (err) => {if (err) {
+        console.log(err.message);
+        onBoot(null);
+    }});
 
     const onHandshake = (val) => {
         if (val.toString() != FLAG_INIT) return;

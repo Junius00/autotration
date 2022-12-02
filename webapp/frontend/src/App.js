@@ -1,7 +1,8 @@
 import './App.css';
 import React from 'react';
 import { io } from 'socket.io-client';
-import DemoWidget from './widgets/DemoWidget';
+import MainWidget from './widgets/MainWidget';
+import ConnectWidget from './widgets/ConnectWidget';
 
 class App extends React.Component {
   constructor(props) {
@@ -9,7 +10,8 @@ class App extends React.Component {
 
     this.state = {
       count: 0,
-      serial: true
+      isActive: true,
+      boardReady: true
     };
 
   }
@@ -19,9 +21,10 @@ class App extends React.Component {
 
     this.socket = io.connect('ws://localhost:8888');
 
+    
     this.socket.on('disconnect', () => {
       window.open('about:blank', '_self');
-      this.setState({ serial: false });
+      this.setState({ isActive: false });
     });
   }
 
@@ -30,12 +33,29 @@ class App extends React.Component {
   }
 
   render() {
-    if (!this.state.serial) return <p>This app has been disconnected.</p>;
+    if (!this.state.isActive) return <p>This app has been disconnected.</p>;
     
     if (!this.socket) this.mountSocket();
+
+    const body = (this.state.boardReady)
+      ? <MainWidget socket={this.socket} /> 
+      : <ConnectWidget 
+        socket={this.socket}
+        setBoardReady={(val) => this.setState({ boardReady: val })} 
+      />;
+
+
     return (
-      <div className="App">
-        <DemoWidget socket={this.socket} />
+      <div className="App"
+        style={{
+          display: 'flex',
+          width: '100vw',
+          height: '100vh',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+      >
+        {body}
       </div>
     );
   }
