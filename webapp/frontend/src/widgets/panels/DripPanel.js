@@ -92,10 +92,10 @@ class DripPanel extends React.Component {
         let newDrip = currentDrip;
 
         if (
-            ((val2.pH < 7 && currentDrip == LONG_DRIP_SEQ) && (pHDiff >= this.thresholdPreEqPH || grad >= this.thresholdGradient)) ||
-            ((val2.pH > 7 && currentDrip == DROP_SEQ) && (pHDiff >= this.thresholdPostEqPH || grad >= this.thresholdGradient))
+            ((val2.pH < 7 && currentDrip === LONG_DRIP_SEQ) && (pHDiff >= this.thresholdPreEqPH || grad >= this.thresholdGradient)) ||
+            ((val2.pH > 7 && currentDrip === DROP_SEQ) && (pHDiff >= this.thresholdPostEqPH || grad >= this.thresholdGradient))
         ) {
-            newDrip = (currentDrip == DROP_SEQ) ? LONG_DRIP_SEQ : DROP_SEQ;
+            newDrip = (currentDrip === DROP_SEQ) ? LONG_DRIP_SEQ : DROP_SEQ;
         }
 
         return newDrip;
@@ -137,7 +137,7 @@ class DripPanel extends React.Component {
 
         return <div>
             <h1>In Drip Sequence</h1>
-            <p>Currently dispensing {this.state.dripFlag == DROP_SEQ ? 'drip by drip' : 'in long drips'}.</p>
+            <p>Currently dispensing {this.state.dripFlag === DROP_SEQ ? 'drip by drip' : 'in long drips'}.</p>
             <p>Current volume added: {this.state.currentVol.toFixed(DP)} ml</p>
             <button onClick={() => {
                 this.setState({ shouldDrip: !this.state.shouldDrip });
