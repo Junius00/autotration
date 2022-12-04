@@ -1,5 +1,5 @@
 import React from 'react';
-import { DP, DROP_SEQ, FLAG_OK, SEP } from '../../constants/flags';
+import { DP, DROP_SEQ, FLAG_OK, LONG_DRIP_SEQ, SEP } from '../../constants/flags';
 import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
 import { cancelSerialListener, listenSerial, writeSerial } from '../../socket';
@@ -15,6 +15,10 @@ class Value {
             x: this.vol,
             y: this.pH
         }
+    }
+
+    calcGradient(lastValue) {
+        return (this.pH - lastValue.pH) / (this.vol - lastValue.vol);
     }
 }
 
@@ -47,10 +51,15 @@ class DripPanel extends React.Component {
 
         this.globals = globals;
         
+        //DRIP MODE SWITCHING PARAMETERS
+        this.thresholdPreEqPH = 1;
+        this.thresholdPostEqPH = 0.2;
+        this.thresholdGradient = 1;
+
         this.dripping = false;
         this.state = {
             shouldDrip: true,
-            dripFlag: DROP_SEQ,
+            dripFlag: LONG_DRIP_SEQ,
             currentVol: 0,
             values: []
         }
@@ -62,6 +71,27 @@ class DripPanel extends React.Component {
 
     componentWillUnmount() {
         if (this.listener) cancelSerialListener(this.socket, this.listener);
+    }
+
+    nextDripFlag(values, currentDrip) {
+        if (values.length <= 1) return currentDrip;
+
+        const lastI = values.length - 1;
+        const val1 = values[lastI - 1], val2 = values[lastI];
+
+        const pHDiff = val2.pH - val1.pH;
+        const grad = val2.calcGradient(val1);
+
+        let newDrip = currentDrip;
+
+        if (
+            ((val2.pH < 7 && currentDrip == LONG_DRIP_SEQ) && (pHDiff >= this.thresholdPreEqPH || grad >= this.thresholdGradient)) ||
+            ((val2.pH > 7 && currentDrip == DROP_SEQ) && (pHDiff >= this.thresholdPostEqPH || grad >= this.thresholdGradient))
+        ) {
+            newDrip = (currentDrip == DROP_SEQ) ? LONG_DRIP_SEQ : DROP_SEQ;
+        }
+
+        return newDrip;
     }
 
     drip() {
@@ -80,10 +110,8 @@ class DripPanel extends React.Component {
 
                 const [ heightStr, analogStr ] = dataStr.split(SEP);
                 const newVol = this.state.currentVol + this.globals.calcVol(parseFloat(heightStr));
-                const val = new Value(
-                    newVol,
-                    this.globals.calcPH(parseFloat(analogStr))
-                );
+                const newPH = this.globals.calcPH(parseFloat(analogStr));
+                const val = new Value(newVol, newPH);
                 
                 const values = this.state.values;
                 values.push(val);
@@ -91,7 +119,8 @@ class DripPanel extends React.Component {
                 this.dripping = false;
                 this.setState({ 
                     currentVol: newVol,
-                    values: values 
+                    values: values,
+                    dripFlag: this.nextDripFlag(values, this.state.dripFlag)
                 });
             });
         })
@@ -102,6 +131,7 @@ class DripPanel extends React.Component {
 
         return <div>
             <h1>In Drip Sequence</h1>
+            <p>Currently dispensing {this.state.dripFlag == DROP_SEQ ? 'drip by drip' : 'in long drips'}.</p>
             <p>Current volume added: {this.state.currentVol.toFixed(DP)} ml</p>
             <button onClick={() => {
                 this.setState({ shouldDrip: !this.state.shouldDrip });
@@ -111,7 +141,7 @@ class DripPanel extends React.Component {
                 ? <HighchartsReact highcharts={Highcharts} options={getOptions(this.state.values)} />
                 : <p>No values yet.</p>
             }
-        </div>
+        </div>;
     }
 }
 
