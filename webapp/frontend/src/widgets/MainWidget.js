@@ -82,6 +82,7 @@ const MainWidget = ({ socket }) => {
     const statesUp = [
         new ButtonState('Raise Laser', (goNext) => {
             setSignalStatus('raise laser');
+            disableAll();
             writeSerial(socket, FLAG_UP_UNTIL_STOP, (flag) => flagCheck(flag, () => {
                 setStatusMsg('Raising laser, click \'Stop\' to stop.'); 
                 singleEnable(setUpEnabled);
@@ -184,6 +185,8 @@ const MainWidget = ({ socket }) => {
                 enabled={lowerEnabled}
                 state={stateLower}
             />
+        </SpacedRow>
+        <SpacedRow>
             <SquareButton
                 enabled={pHCalEnabled}
                 state={statePHCal}
@@ -192,6 +195,8 @@ const MainWidget = ({ socket }) => {
                 enabled={laserCalEnabled}
                 state={stateLaserCal}
             />
+        </SpacedRow>
+        <SpacedRow>
             <SquareButton
                 enabled={dripEnabled}
                 state={stateDrip}

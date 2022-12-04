@@ -18,7 +18,7 @@ const SquareButton = ({ enabled, state, goNext = null }) => {
             if (enabled) state.onClick(goNext);
         }}
     >
-        {enabled ? state.value: 'Not Available'}
+        {state.value}
     </div>
 };
 
