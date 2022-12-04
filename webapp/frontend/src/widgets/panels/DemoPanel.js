@@ -1,15 +1,17 @@
 import { Component } from "react";
-import { DEMO_SEQ, DP, FLAG_OK, SEP } from "../constants/flags";
-import { SERIAL_OUT } from "../constants/sockets";
-import { writeSerial } from "../socket";
+import { DEMO_SEQ, DP, FLAG_OK, SEP } from "../../constants/flags";
+import { cancelSerialListener, listenSerial, writeSerial } from "../../socket";
 
 
-class DemoWidget extends Component {
+class DemoPanel extends Component {
     constructor(props) {
         super(props);
 
         this.socket = props.socket;
-        console.log(props);
+        this.mmToVol = props.mmToVol;
+
+        this.listener = null;
+
         this.state = {
             distance: 0
         };
@@ -22,23 +24,26 @@ class DemoWidget extends Component {
         if (this.waiting) return;
 
         this.waiting = true;
-        writeSerial(this.socket, DEMO_SEQ, (val) => {
+        this.listener = writeSerial(this.socket, DEMO_SEQ, (val) => {
             //distance receiver
             if (val !== FLAG_OK) {
+                this.listener = null;
                 return;
             }
             
-            const onResp = (val) => {
+            this.listener = listenSerial(this.socket, (val) => {
                 this.setState({
                     distance: this.state.distance + parseFloat(val.split(SEP)[0])
                 });
                 
                 this.waiting = false;
                 if (!this.shouldStop) this.writeDemo();
-                this.socket.off(SERIAL_OUT, onResp);
-            };
-            this.socket.on(SERIAL_OUT, onResp);
+            });
         });
+    }
+
+    componentWillUnmount() {
+        if (this.listener !== null) cancelSerialListener(this.socket, this.listener);
     }
 
     render() {
@@ -49,7 +54,7 @@ class DemoWidget extends Component {
             <p style={{
                 fontSize: 100
             }}>
-                {(this.state.distance * 0.09593246354566386).toFixed(DP)} ml
+                {(this.state.distance * this.mmToVol).toFixed(DP)} ml
             </p>
             <button onClick={() => {
                 this.shouldStop = false;
@@ -60,4 +65,4 @@ class DemoWidget extends Component {
     }
 }
 
-export default DemoWidget;
+export default DemoPanel;

@@ -12,6 +12,7 @@ import { DATA_IN } from '../constants/sockets';
 import DripPanel from './panels/DripPanel';
 import SpacedRow from '../views/SpacedRow';
 import SpacedColumn from '../views/SpacedColumn';
+import DemoPanel from './panels/DemoPanel';
 
 const MainWidget = ({ socket }) => {
     //init globals
@@ -41,13 +42,15 @@ const MainWidget = ({ socket }) => {
     const [ laserCalEnabled, setLaserCalEnabled ] = useState(true);
     const [ pHCalEnabled, setPHCalEnabled ] = useState(true);
     const [ dripEnabled, setDripEnabled ] = useState(true);
-    
+    const [ demoEnabled, setDemoEnabled ] = useState(true);
+
     const enableAll = () => {
         setUpEnabled(true);
         setLowerEnabled(true);
         setLaserCalEnabled(true);
         setPHCalEnabled(true);
         setDripEnabled(true);
+        setDemoEnabled(true);
     };
 
     const disableAll = () => {
@@ -56,6 +59,7 @@ const MainWidget = ({ socket }) => {
         setLaserCalEnabled(false);
         setPHCalEnabled(false);
         setDripEnabled(false);
+        setDemoEnabled(false);
     };
 
     const singleEnable = (setEnable) => {
@@ -144,7 +148,21 @@ const MainWidget = ({ socket }) => {
                 socket={socket}
                 globals={globals}
             />
-        )
+        );
+    });
+
+    const stateDemo = new ButtonState('Demo Sequence', (_) => {
+        if (!globals.volStep) {
+            setStatusMsg('Please calibrate volume to height ratio before continuing.');
+            return;
+        }
+
+        setActivityPanel(
+            <DemoPanel
+                socket={socket}
+                mmToVol={globals.volStep}
+            />
+        );
     });
 
     if (activityPanel) return <SpacedColumn>
