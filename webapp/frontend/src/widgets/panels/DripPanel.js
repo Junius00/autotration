@@ -25,17 +25,28 @@ class Value {
 const getOptions = (values) => {
     return {
         chart: {
+            width: 600,
             height: 400
         },
-        title: {
-            text: 'Titrated Graph'
+        title: null,
+        xAxis: { 
+            title: { text: 'Volume Added (ml)' },
+            labels: { format: '{value:.3f}'} 
+        },
+        yAxis: { 
+            title: { text: 'pH' },
+            labels: { format: '{value:.3f}' }
         },
         legend: { enabled: false },
         series: [
             {
                 type: 'scatter',
                 name: 'Points',
-                data: values.map((val) => val.getPoint())
+                data: values.map((val) => val.getPoint()),
+                tooltip: { 
+                headerFormat: '',
+                pointFormat: "Volume: <b>{point.x:.3f} ml</b></br>pH: <b>{point.y:.3f}</b>"
+                }
             }
         ]
     }
@@ -63,10 +74,6 @@ class DripPanel extends React.Component {
             currentVol: 0,
             values: []
         }
-    }
-
-    componentDidMount() {
-        this.drip();
     }
 
     componentWillUnmount() {
@@ -99,7 +106,6 @@ class DripPanel extends React.Component {
 
         this.dripping = true;
         this.listener = writeSerial(this.socket, this.state.dripFlag, (flag) => {
-            this.listener = null;
             if (flag !== FLAG_OK) {
                 this.dripping = false;
                 return;

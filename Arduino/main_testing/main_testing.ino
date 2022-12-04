@@ -79,8 +79,16 @@ String dropSeq(int longDrip = 0) {
     delay(500);
     double distance = measureDropMM(); //isBlocked()=1, distance>0
     mlCurrent += distance;
+
+    delay(1000);
     double a = measureAnalog();
     return String(distance, DP) + String(SEP) + String(a, DP);  //Siyuan: added the analog value display
+}
+
+String demoSeq() {
+  signalReceived();
+  delay(2500);
+  return String(measureDropMM(), DP) + String(SEP) + String(0, DP);
 }
 
 void laserOnSeq() {
@@ -104,17 +112,17 @@ void loop() {
       }
       break;
 
-     case LOWER_UNTIL_STOP:
+    case LOWER_UNTIL_STOP:
       Serial.println(measureDropMM());
       
       break;
 
-     case LASER_CALIBRATION_SEQ:
+    case LASER_CALIBRATION_SEQ:
       Serial.println(laserCalSeq());
       
       break;
 
-     case PH_CALIBRATION_SEQ:
+    case PH_CALIBRATION_SEQ:
       while (true) {
         signalReceived();
         double a = measureAnalog();
@@ -126,21 +134,25 @@ void loop() {
 
       break;
       
-     case DROP_SEQ:
+    case DROP_SEQ:
       Serial.println(dropSeq());
       break;
 
-     //Junius: Added flag 106 for long drip
-     case LONG_DRIP_SEQ:
+    //Junius: Added flag 106 for long drip
+    case LONG_DRIP_SEQ:
       Serial.println(dropSeq(1)); 
       break;
-
-     //Siyuan: Added flag 108 for turning on laser 5 secs (for adjusting light sensor positions)
-     case LASER_ON_SEQ:
+    
+    case DEMO_SEQ:
+      Serial.println(demoSeq());
+      break;
+    
+    //Siyuan: Added flag 108 for turning on laser 5 secs (for adjusting light sensor positions)
+    case LASER_ON_SEQ:
       laserOnSeq();
       break;
-      
-     default:
+
+    default:
       Serial.println(FLAG_INVALID);
       break;
   }

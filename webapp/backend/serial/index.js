@@ -1,4 +1,4 @@
-const { SerialPort } = require("serialport");
+const { SerialPort, ReadlineParser } = require("serialport");
 const { BAUDRATE, FLAG_INIT } = require('../constants/serial');
 
 const initBoard = (path, onBoot, hasBoard = false, baudRate = BAUDRATE) => {
@@ -32,7 +32,9 @@ const waitResp = (board, onResp) => {
         onResp(val);
     }
 
-    board.on('data', respWrapper);
+    const parser = new ReadlineParser();
+    board.pipe(parser);
+    parser.on('data', respWrapper);
 }
 const boardWrite = (board, data) => {
     console.log('Serial writing:', data.toString());
