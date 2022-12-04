@@ -196,6 +196,10 @@ const MainWidget = ({ socket }) => {
                 enabled={dripEnabled}
                 state={stateDrip}
             />
+            <SquareButton
+                enabled={demoEnabled}
+                state={stateDemo}
+            />
         </SpacedRow>
         <SpacedColumn
             align='stretch'

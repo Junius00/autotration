@@ -6,7 +6,7 @@ const SquareButton = ({ enabled, state, goNext = null }) => {
             display: 'flex',
             cursor: enabled ? 'pointer' : 'not-allowed',
             color: state.textColor,
-            backgroundColor: state.bgColor,
+            backgroundColor: enabled ? state.bgColor : '#cccccc',
             width: 130,
             height: 80,
             padding: 10,
@@ -18,7 +18,7 @@ const SquareButton = ({ enabled, state, goNext = null }) => {
             if (enabled) state.onClick(goNext);
         }}
     >
-        {state.value}
+        {enabled ? state.value: 'Not Available'}
     </div>
 };
 
