@@ -31,11 +31,11 @@ const getOptions = (values) => {
         title: null,
         xAxis: { 
             title: { text: 'Volume Added (ml)' },
-            labels: { format: '{value:.3f}'} 
+            labels: { format: `{value:.${DP}f}`} 
         },
         yAxis: { 
             title: { text: 'pH' },
-            labels: { format: '{value:.3f}' }
+            labels: { format: `{value:.${DP}f}` }
         },
         legend: { enabled: false },
         series: [
@@ -118,7 +118,7 @@ class DripPanel extends React.Component {
                 const newVol = this.state.currentVol + this.globals.calcVol(parseFloat(heightStr));
                 const newPH = this.globals.calcPH(parseFloat(analogStr));
                 const val = new Value(newVol, newPH);
-                
+
                 const values = this.state.values;
                 values.push(val);
                 

@@ -118,7 +118,7 @@ const MainWidget = ({ socket }) => {
             }}
             exit={() => {
                 exit();
-                setStatusMsg(`Calibrated - pH 3: ${globals.pH3}; pH7: ${globals.pH7}`);
+                setStatusMsg(`Calibrated - pH 4: ${globals.pH4}; pH7: ${globals.pH7}`);
             }}
         />
     ));

@@ -5,12 +5,12 @@ const { writeData, readData } = require("../data/rw");
 
 const onDataReq = (socket) => {
     const data = readData();
-    console.log(`sending ${data}`);
+    console.log(`sending ${JSON.stringify(data)}`);
     socket.emit(DATA_OUT, data);
 };
 
 const onDataIn = (data) => {
-    console.log(`writing ${data}`);
+    console.log(`writing ${JSON.stringify(data)}`);
     writeData(data);
 };
 

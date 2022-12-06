@@ -1,25 +1,33 @@
-import React from 'react';
-import { FLAG_OK, PH_CALIBRATION_SEQ } from '../../constants/flags';
-import { listenSerial, writeSerial } from '../../socket';
+import React, { useEffect } from 'react';
+import { FLAG_OK, FLAG_STOP, PH_CALIBRATION_SEQ } from '../../constants/flags';
+import { cancelSerialListener, listenSerial, writeSerial } from '../../socket';
 import ButtonState from '../../views/CyclicButton/ButtonState';
 import CyclicButton from '../../views/CyclicButton/CyclicButton';
 
 const PHCalPanel = ({ socket, globals, setGlobals, exit }) => {
     const [ statusMsg, setStatusMsg ] = React.useState('Insert the probe into the pH 4 buffer, then measure.');
     const [ pH4, setPH4 ] = React.useState();
-    
 
+    let activeListener = null;
+
+    React.useEffect(() => () => {
+        if (activeListener) cancelSerialListener(socket, activeListener);
+    }, []);
     const getPH = (onPH) => {
         setStatusMsg('Sending pH measurement request...');
 
-        writeSerial(socket, PH_CALIBRATION_SEQ, (flag) => {
+        activeListener = writeSerial(socket, PH_CALIBRATION_SEQ, (flag) => {
             if (flag !== FLAG_OK) {
+                activeListener = null;
                 setStatusMsg('Request failed. Please try again.');
                 return;
             }
             
             setStatusMsg('Measuring analog value...');
-            listenSerial(socket, (data) => onPH(parseFloat(data)));
+            activeListener = listenSerial(socket, (data) => {
+                onPH(parseFloat(data));
+                activeListener = null;
+            });
         });
     };
 
@@ -36,6 +44,8 @@ const PHCalPanel = ({ socket, globals, setGlobals, exit }) => {
                 globals.pH4 = pH4;
                 globals.pH7 = pH;
                 setGlobals(globals);
+
+                writeSerial(socket, FLAG_STOP);
                 exit();
             })
         })

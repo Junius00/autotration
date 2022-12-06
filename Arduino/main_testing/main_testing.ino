@@ -71,13 +71,15 @@ double measureAnalog() {
 //Sequences
 double laserCalSeq() {
   signalReceived();
+  while (waitForFlag() != FLAG_STOP);
+  signalReceived();
   return measureDropMM(); 
 }
 
 String dropSeq(int longDrip = 0) {
     signalReceived();
     delay(500);
-    double distance = measureDropMM(); //isBlocked()=1, distance>0
+    double distance = measureDropMM() * (1 + longDrip * 4); //isBlocked()=1, distance>0
     mlCurrent += distance;
 
     delay(1000);
