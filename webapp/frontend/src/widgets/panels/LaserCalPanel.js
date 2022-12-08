@@ -69,7 +69,7 @@ const LaserCalPanel = ({ socket, globals, setGlobals, exit }) => {
             setInput={(val) => {
                 const volEnd = parseFloat(val);
 
-                globals.volStep = (volStart - volEnd) / height;
+                globals.volStep = (volEnd - volStart) / height;
                 setGlobals(globals);
                 exit();
             }}

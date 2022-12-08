@@ -10,7 +10,7 @@ plt.switch_backend('agg')
 app=Flask(__name__)
 
 #Homepage global variables
-codeDict={"Up":"101", "Lower": "102", "Laser":"103", "pH": "104", "Stop":"201", "Drop":"105", "LongDrip":"106", "Demo":"107", "LaserOn":"108"}
+codeDict={"Up":"101", "Lower": "102", "Laser":"103", "pH": "104", "Stop":"201", "Drop":"105", "LongDrip":"106", "Demo":"107", "LaserOn":"108", "FlagInit":"69"}
 ButtonTable={'Up':"Up",'Lower':"Lower Until Meets Float",'Laser':"Calibrate Laser",'pH':"Calibrate pH",'Stop':"Stop",'Drop':"Start Drop Sequence", 'LaserOn':"Turn on Laser for 5s"}
 ButtonList=list(ButtonTable.items())
 linkButton=["Laser","pH","Drop"]
@@ -181,8 +181,16 @@ def setup():
         port=request.form["port"]
         try:
             global arduino
+            prompt="Successfully connected to Arduino!"
+            connected=1
             arduino=serial.Serial(port=port, baudrate=115200, timeout=1)
-            return render_template("setup.html", prompt="Successfully connected to Arduino!", connected=1)
+            #SerialWrite(codeDict["FlagInit"])
+            #print("Board return: ", SerialReceiveln())
+            #flag=SerialReceiveln()
+            #if flag!="69":
+            #    prompt="Server init failed!"
+            #    connected=0
+            return render_template("setup.html", prompt=prompt, connected=connected)
         except:
             return render_template("setup.html", prompt="Wrong Port number! Please try again in the format of 'COMx'", connected=0)
     
