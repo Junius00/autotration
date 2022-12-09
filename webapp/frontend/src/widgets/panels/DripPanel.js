@@ -63,9 +63,9 @@ class DripPanel extends React.Component {
         this.globals = globals;
         
         //DRIP MODE SWITCHING PARAMETERS
-        this.thresholdPreEqPH = 1;
+        this.thresholdPreEqPH = 0.4;
         this.thresholdPostEqPH = 0.2;
-        this.thresholdGradient = 1;
+        this.thresholdGradient = 0.5;
 
         this.dripping = false;
         this.state = {
